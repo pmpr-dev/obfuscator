@@ -1,0 +1,15 @@
+{
+  "name": "pmpr/obfuscator",
+  "type": "project",
+  "license": "proprietary",
+  "description": "PHP Obfuscator",
+  "require": {
+    "nikic/php-parser": "^4.12"
+  },
+  "autoload": {
+    "psr-4": {
+      "Obfuscator\\": "src/Obfuscator"
+    }
+  },
+  "minimum-stability": "dev"
+}

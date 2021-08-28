@@ -1,0 +1,98 @@
+{
+  "obfuscate_php_ext": ["php"],
+  "ignore_pre_defined_classes": "all",
+
+  "parser_mode": "PREFER_PHP7",
+
+  "scramble_mode": "hash",
+  "scramble_length": 5,
+
+  "include_namespaces_prefix": [
+    "Pmpr/"
+  ],
+
+  "ignore_traits": [],
+  "ignore_labels": [],
+  "ignore_methods": [],
+  "ignore_classes": [],
+  "ignore_constants": [],
+  "ignore_variables": [
+    "post",
+    "product",
+    "typenow",
+    "blog_id",
+    "typenow",
+    "pagenow",
+    "metaCaps",
+    "polylang",
+    "q_config",
+    "sitepress",
+    "orm_model",
+    "parent_file",
+    "hook_suffix",
+    "cmb2Override",
+    "shortcode_tags",
+    "concatenate_scripts"
+  ],
+  "ignore_functions": [],
+  "ignore_properties": [],
+  "ignore_interfaces": [],
+  "ignore_namespaces": [],
+  "ignore_class_constants": [],
+
+  "ignore_constants_prefix": [],
+  "ignore_variables_prefix": [
+    "is_",
+    "wp",
+    "wp_",
+    "_wp_",
+    "woocommerce"
+  ],
+  "ignore_functions_prefix": [],
+
+  "ignore_methods_prefix": [],
+  "ignore_properties_prefix": [],
+  "ignore_class_constants_prefix": [],
+
+  "ignore_traits_prefix": [],
+  "ignore_labels_prefix": [],
+  "ignore_classes_prefix": [],
+  "ignore_interfaces_prefix": [],
+  "ignore_namespaces_prefix": [],
+
+  "obfuscate_label": true,
+  "obfuscate_string": true,
+  "obfuscate_if_stmt": true,
+  "obfuscate_property": true,
+  "obfuscate_variable": true,
+  "obfuscate_loop_stmt": true,
+  "obfuscate_method_name": true,
+  "obfuscate_class_constant": true,
+
+  "obfuscate_constant": false,
+  "obfuscate_namespace": false,
+  "obfuscate_class_name": false,
+  "obfuscate_trait_name": false,
+  "obfuscate_function_name": false,
+  "obfuscate_interface_name": false,
+
+  "shuffle_stmts": true,
+  "shuffle_stmts_chunk_mode": "fixed",
+  "shuffle_stmts_chunk_ratio": 20,
+  "shuffle_stmts_min_chunk_size": 1,
+
+  "silent": false,
+  "confirm": false,
+  "abort_on_error": true,
+  "strip_indentation": true,
+
+  "source_directory": null,
+  "target_directory": null,
+
+  "keep": [],
+  "skip": [],
+  "allow_overwrite_empty_files": true,
+
+  "follow_symlinks": false,
+  "max_nested_directory": 99
+}
