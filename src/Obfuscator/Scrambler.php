@@ -71,7 +71,7 @@ class Scrambler extends Container
 	/**
 	 * @var bool
 	 */
-	protected bool $caseSensitive = false;
+	protected bool $caseSensitive = true;
 
 	/**
 	 * @var string|null
@@ -324,7 +324,7 @@ class Scrambler extends Container
 
 					$ignorePrefixes = array_flip($config->getIgnoreConstantsPrefix());
 				}
-				$this->caseSensitive = true;
+
 				break;
 			case self::CLASS_CONSTANT_TYPE:
 
@@ -341,7 +341,7 @@ class Scrambler extends Container
 					$ignorePrefixes = array_flip($ignoreClassConstantsPrefix);
 				}
 
-				$this->caseSensitive = true;
+
 				break;
 			case self::VARIABLE_TYPE:
 				$ignores = array_flip(self::RESERVED_VARIABLES);
@@ -354,7 +354,7 @@ class Scrambler extends Container
 
 					$ignorePrefixes = array_flip($ignoreVariablesPrefix);
 				}
-				$this->caseSensitive = true;
+
 				break;
 			case self::PROPERTY_TYPE:
 
@@ -372,11 +372,9 @@ class Scrambler extends Container
 					$ignorePrefixes = array_flip($ignorePropertiesPrefix);
 				}
 
-				$this->caseSensitive = true;
+
 				break;
 			case self::FUNCTION_OR_CLASS_TYPE:
-				$this->caseSensitive = false;
-
 				$ignores = array_merge(array_flip(self::RESERVED_FUNCTIONS), array_flip(array_map('strtolower', get_defined_functions()['internal'])));
 
 				$ignores = $this->prepareIgnores($ignores, $config->getIgnoreFunctions());
@@ -420,6 +418,7 @@ class Scrambler extends Container
 
 				$ignorePrefixes = $this->prepareIgnores($ignorePrefixes, $config->getIgnoreNamespacesPrefix());
 
+
 				break;
 			case self::METHOD_TYPE:
 
@@ -437,9 +436,9 @@ class Scrambler extends Container
 
 				$ignores = $this->prepareIgnores($ignores, $config->getIgnoreMethods());;
 
-				$ignorePrefixes = $this->prepareIgnores($ignores, $config->getIgnoreMethodsPrefix());;
+				$ignorePrefixes = $this->prepareIgnores($ignorePrefixes, $config->getIgnoreMethodsPrefix());;
 
-				$this->caseSensitive = false;
+
 				break;
 			case self::LABEL_TYPE:
 				$ignores = array_flip(self::RESERVED_FUNCTIONS);
@@ -451,7 +450,7 @@ class Scrambler extends Container
 
 					$ignorePrefixes = array_flip($ignoreLabelsPrefix);
 				}
-				$this->caseSensitive = true;
+
 				break;
 		}
 
@@ -604,7 +603,7 @@ class Scrambler extends Container
 			}
 		}
 
-		if (!isset($this->t_scramble[$value])) {
+		if (!isset($this->scrambles[$value])) {
 			$limit = 50;
 			for ($i = 0; $i < $limit; ++$i) {
 
@@ -661,38 +660,6 @@ class Scrambler extends Container
 
 			$current = array_merge($current, array_flip(array_map('strtolower', $new)));
 		}
-		return $current;
-	}
-
-	/**
-	 * @param array $current
-	 * @param array $new
-	 * @param array $other
-	 *
-	 * @return array
-	 */
-	private function preparePreDefinedClasses(array $current, array $new, array $other): array
-	{
-		$ignorePreDefinedClasses = $this->getConfig()->getIgnorePreDefinedClasses();
-		if ($ignorePreDefinedClasses != 'none') {
-
-			if ($ignorePreDefinedClasses == 'all') {
-
-				$current = array_merge($current, $new);
-			} else if (is_array($ignorePreDefinedClasses)) {
-
-
-				$classNames = array_map('strtolower', $ignorePreDefinedClasses);
-				foreach ($classNames as $className) {
-
-					if (isset($other[$className])) {
-
-						$current = array_merge($current, $other[$className]);
-					}
-				}
-			}
-		}
-
 		return $current;
 	}
 
@@ -778,5 +745,37 @@ class Scrambler extends Container
 			}
 		}
 		return $return;
+	}
+
+	/**
+	 * @param array $current
+	 * @param array $new
+	 * @param array $other
+	 *
+	 * @return array
+	 */
+	private function preparePreDefinedClasses(array $current, array $new, array $other): array
+	{
+		$ignorePreDefinedClasses = $this->getConfig()->getIgnorePreDefinedClasses();
+		if ($ignorePreDefinedClasses != 'none') {
+
+			if ($ignorePreDefinedClasses == 'all') {
+
+				$current = array_merge($current, $new);
+			} else if (is_array($ignorePreDefinedClasses)) {
+
+
+				$classNames = array_map('strtolower', $ignorePreDefinedClasses);
+				foreach ($classNames as $className) {
+
+					if (isset($other[$className])) {
+
+						$current = array_merge($current, $other[$className]);
+					}
+				}
+			}
+		}
+
+		return $current;
 	}
 }

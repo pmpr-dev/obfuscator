@@ -108,6 +108,19 @@ class Config extends Container
 		return $this->followSymlinks;
 	}
 
+	/***
+	 * @var bool
+	 */
+	protected bool $ignoreSnakeCase = false;
+
+	/**
+	 * @return bool
+	 */
+	public function isIgnoreSnakeCase(): bool
+	{
+		return $this->ignoreSnakeCase;
+	}
+
 	/**
 	 * @var array
 	 */
@@ -555,6 +568,11 @@ class Config extends Container
 	protected bool $obfuscateInterfaceName = true;
 
 	/**
+	 * @var bool
+	 */
+	protected bool $obfuscateMethodNameByAnnotation = false;
+
+	/**
 	 * @return bool
 	 */
 	public function isObfuscateString(): bool
@@ -664,6 +682,14 @@ class Config extends Container
 	public function isObfuscateInterfaceName(): bool
 	{
 		return $this->obfuscateInterfaceName;
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function isObfuscateMethodNameByAnnotation(): bool
+	{
+		return $this->obfuscateMethodNameByAnnotation;
 	}
 
 	/**

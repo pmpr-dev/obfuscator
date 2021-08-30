@@ -9,6 +9,8 @@
 
   "include_namespaces_prefix": [],
 
+  "ignore_camel_case": false,
+
   "ignore_traits": [],
   "ignore_labels": [],
   "ignore_methods": [],
@@ -49,6 +51,8 @@
   "obfuscate_function_name": true,
   "obfuscate_interface_name": true,
   "obfuscate_class_constant": true,
+
+  "obfuscate_method_name_by_annotation": false,
 
   "shuffle_stmts": true,
   "shuffle_stmts_chunk_mode": "fixed",

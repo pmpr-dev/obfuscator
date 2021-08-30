@@ -3,8 +3,10 @@
 namespace Obfuscator;
 
 use Exception;
+use Obfuscator\Parser\Comment;
 use Obfuscator\Parser\PrettyPrinter;
 use Obfuscator\Parser\Visitor;
+use phpDocumentor\Reflection\DocBlockFactory;
 use PhpParser\Error;
 use PhpParser\Node\Stmt\Use_;
 use PhpParser\NodeTraverser;
@@ -32,7 +34,9 @@ class Obfuscator extends Container
 	 */
 	private function init(array $args = [])
 	{
-		global $config, $scramblers, $parser, $prettyPrinter, $traverser;
+		global $config, $scramblers, $parser, $prettyPrinter, $traverser, $isMethodGathering, $gatheredMethods, $docParser;
+
+		$gatheredMethods = [];
 
 		$config = Config::getInstance($args);
 		$config->validate();
@@ -61,14 +65,12 @@ class Obfuscator extends Container
 			self::FUNCTION_OR_CLASS_TYPE,
 		];
 
-		$parser = (new ParserFactory())->create($config->getParserMode());
-		if ($config->isObfuscateString()) {
+		$docParser = DocBlockFactory::createInstance([
+			Comment::NAME => Comment::class,
+		]);
 
-			$prettyPrinter = new PrettyPrinter();
-		} else {
-
-			$prettyPrinter = new Standard();
-		}
+		$parser        = (new ParserFactory())->create($config->getParserMode());
+		$prettyPrinter = new PrettyPrinter();
 
 		foreach ($types as $type) {
 
@@ -78,7 +80,17 @@ class Obfuscator extends Container
 		$traverser = new NodeTraverser();
 		$traverser->addVisitor(new Visitor($config, $scramblers));
 
-		$this->obfuscateDirectory($config->getTargetDirectory(), $config->getSourceDirectory());
+		$isMethodGathering = false;
+		if ($config->isObfuscateMethodNameByAnnotation()) {
+
+			$isMethodGathering = true;
+		}
+		$this->obfuscateDirectory("{$path}/obfuscated", $config->getSourceDirectory());
+		if ($isMethodGathering) {
+
+			$isMethodGathering = false;
+			$this->obfuscateDirectory("{$path}/obfuscated", $config->getSourceDirectory());
+		}
 	}
 
 	/**
@@ -88,7 +100,7 @@ class Obfuscator extends Container
 	 */
 	private function obfuscateDirectory(string $target, string $source, bool $keepMode = false)
 	{
-		global $config;
+		global $config, $isMethodGathering;
 
 		static $recursionLevel = 0;
 
@@ -215,21 +227,27 @@ class Obfuscator extends Container
 							} else {
 
 								$obfuscatedString = $this->obfuscate($sourcePath);
-								if ($obfuscatedString === null) {
+								if (!$isMethodGathering) {
 
-									if (isset($conf->abort_on_error)) {
+									if ($obfuscatedString === null) {
 
-										fprintf(STDERR, "Aborting...%s", PHP_EOL);
-										exit(57);
+										if (isset($conf->abort_on_error)) {
+
+											fprintf(STDERR, "Aborting...%s", PHP_EOL);
+											exit(57);
+										}
 									}
+									file_put_contents($targetPath, $obfuscatedString . PHP_EOL);
 								}
-								file_put_contents($targetPath, $obfuscatedString . PHP_EOL);
 							}
 
-							touch($targetPath, $sourceStat['mtime']);
-							chmod($targetPath, $sourceStat['mode']);
-							chgrp($targetPath, $sourceStat['gid']);
-							chown($targetPath, $sourceStat['uid']);
+							if (!$isMethodGathering) {
+
+								touch($targetPath, $sourceStat['mtime']);
+								chmod($targetPath, $sourceStat['mode']);
+								chgrp($targetPath, $sourceStat['gid']);
+								chown($targetPath, $sourceStat['uid']);
+							}
 							continue;
 						}
 					}
@@ -267,18 +285,19 @@ class Obfuscator extends Container
 
 			try {
 
-				$source = php_strip_whitespace($filename);
+//				$source = php_strip_whitespace($filename);
+//				if ($source == '') {
+//
+//					if ($config->isAllowOverwriteEmptyFiles()) {
+//
+//						return $source;
+//					}
+//					throw new Exception("Error obfuscating [$SrcFilename]: php_strip_whitespace returned an empty string!");
+//				}
 				fprintf(STDERR, "Obfuscating %s%s", $SrcFilename, PHP_EOL);
-				if ($source === '') {
-
-					if ($config->isAllowOverwriteEmptyFiles()) {
-
-						return $source;
-					}
-					throw new Exception("Error obfuscating [$SrcFilename]: php_strip_whitespace returned an empty string!");
-				}
 				try {
 
+					$source = implode('', $source);
 					// PHP-Parser returns the syntax tree
 					$stmts = $parser->parse($source);
 				} catch (Error $e) {

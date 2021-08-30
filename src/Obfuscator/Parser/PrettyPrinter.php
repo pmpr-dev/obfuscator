@@ -2,6 +2,12 @@
 
 namespace Obfuscator\Parser;
 
+use Exception;
+use Obfuscator\Config;
+use Obfuscator\Interfaces\ConstantInterface;
+use Obfuscator\Traits\UtilityTrait;
+use PhpParser\Node\Expr\Array_;
+use PhpParser\Node\Expr\ArrayItem;
 use PhpParser\Node\Scalar\Encapsed;
 use PhpParser\Node\Scalar\EncapsedStringPart;
 use PhpParser\Node\Scalar\String_;
@@ -11,20 +17,22 @@ use PhpParser\PrettyPrinter\Standard;
  * Class PrettyPrinter
  * @package Obfuscator\Parser
  */
-class PrettyPrinter extends Standard
+class PrettyPrinter extends Standard implements ConstantInterface
 {
+	use UtilityTrait;
+
 	/**
-	 * @param $str
+	 * @param $string
 	 *
 	 * @return string
 	 */
-	private function obfuscateString($str): string
+	private function obfuscateString($string): string
 	{
-		$length = strlen($str);
+		$length = strlen($string);
 		$result = '';
 		for ($i = 0; $i < $length; ++$i) {
 
-			$result .= mt_rand(0, 1) ? "\x" . dechex(ord($str[$i])) : "\\" . decoct(ord($str[$i]));
+			$result .= mt_rand(0, 1) ? "\x" . dechex(ord($string[$i])) : "\\" . decoct(ord($string[$i]));
 		}
 		return $result;
 	}
@@ -33,16 +41,35 @@ class PrettyPrinter extends Standard
 	 * @param String_ $node
 	 *
 	 * @return string
+	 * @throws Exception
 	 */
 	public function pScalar_String(String_ $node): string
 	{
-		$result = $this->obfuscateString($node->value);
-		if (!strlen($result)) {
+		global $config;
+		$string = $node->value;
+		if ($this->isCallbackString($node)) {
 
-			$result = "''";
+			if ($matched = $this->getUtility()->getMatchedMethodName($node, $string)) {
+
+				$string      = $matched;
+				$node->value = $matched;
+			}
+		}
+
+		if ($config instanceof Config
+			&& $config->isObfuscateString()) {
+
+			$result = $this->obfuscateString($string);
+			if (!strlen($result)) {
+
+				$result = "''";
+			} else {
+
+				$result = "\"{$result}\"";
+			}
 		} else {
 
-			$result = "\"{$result}\"";
+			$result = parent::pScalar_String($node);
 		}
 
 		return $result;
@@ -55,18 +82,56 @@ class PrettyPrinter extends Standard
 	 */
 	protected function pScalar_Encapsed(Encapsed $node): string
 	{
-		$result = '';
-		foreach ($node->parts as $element) {
+		global $config;
+		if ($config instanceof Config
+			&& $config->isObfuscateString()) {
 
-			if ($element instanceof EncapsedStringPart) {
+			$result = '';
+			foreach ($node->parts as $element) {
 
-				$result .= $this->obfuscateString($element->value);
-			} else {
+				if ($element instanceof EncapsedStringPart) {
 
-				$result .= '{' . $this->p($element) . '}';
+					$result .= $this->obfuscateString($element->value);
+				} else {
+
+					$result .= '{' . $this->p($element) . '}';
+				}
+			}
+			$result = '"' . $result . '"';
+		} else {
+
+			$result = parent::pScalar_Encapsed($node);
+		}
+		return $result;
+	}
+
+	/**
+	 * @param String_ $node
+	 *
+	 * @return bool
+	 */
+	public function isCallbackString(String_ $node): bool
+	{
+		$isCallback = false;
+		$parent     = $node->getAttribute('parent');
+		if ($parent instanceof ArrayItem) {
+
+			$parent = $parent->getAttribute('parent');
+			if ($parent instanceof Array_) {
+
+				if (count($parent->items) == 2
+					&& isset($parent->items[0]->value->name)) {
+
+					$objectName = $parent->items[0]->value->name;
+					if (in_array($objectName, ['this', '__CLASS__'])
+						|| strpos($objectName, '::class') !== false) {
+
+						$isCallback = true;
+					}
+				}
 			}
 		}
-		return '"' . $result . '"';
 
+		return $isCallback;
 	}
 }

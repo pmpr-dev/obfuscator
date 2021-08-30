@@ -4,7 +4,8 @@
   "license": "proprietary",
   "description": "PHP Obfuscator",
   "require": {
-    "nikic/php-parser": "^4.12"
+    "nikic/php-parser": "^4.12",
+    "phpdocumentor/reflection-docblock": "5.x-dev"
   },
   "autoload": {
     "psr-4": {

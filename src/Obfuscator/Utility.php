@@ -3,8 +3,13 @@
 namespace Obfuscator;
 
 use Obfuscator\Interfaces\ConstantInterface;
+use Obfuscator\Parser\Comment;
+use phpDocumentor\Reflection\DocBlockFactory;
+use PhpParser\Comment\Doc;
+use PhpParser\Node;
 use PhpParser\Node\Stmt\Goto_;
 use PhpParser\Node\Stmt\Label;
+use PhpParser\Node\VarLikeIdentifier;
 
 /**
  * Class Utility
@@ -197,4 +202,196 @@ class Utility implements ConstantInterface
 
 		return $string;
 	}
+
+	/**
+	 * @param Node $node
+	 *
+	 * @return mixed|Node\Stmt\ClassMethod
+	 */
+	public function getParentClassMethod(Node $node)
+	{
+		return $this->getParentUntilFound($node, Node\Stmt\ClassMethod::class);
+	}
+
+	/**
+	 * @param Node $node
+	 *
+	 * @return mixed|Node\Stmt\ClassMethod
+	 */
+	public function getParentClass(Node $node)
+	{
+		return $this->getParentUntilFound($node, Node\Stmt\Class_::class);
+	}
+
+	/**
+	 * @param Node $node
+	 *
+	 * @return string
+	 */
+	public function getParentNamespace(Node $node): string
+	{
+		$namespace = $this->getParentUntilFound($node, Node\Stmt\Namespace_::class);
+		if ($namespace instanceof Node\Stmt\Namespace_) {
+
+			$namespace = implode('\\', $namespace->name->parts);
+		} else {
+
+			$namespace = '';
+		}
+
+		return $namespace;
+	}
+
+	/**
+	 * @param Node   $node
+	 * @param string $type
+	 *
+	 * @return mixed|Node
+	 */
+	public function getParentUntilFound(Node $node, string $type)
+	{
+		if (class_exists($type)
+			&& !is_a($node, $type)) {
+
+			$node = $node->getAttribute('parent');
+			if ($node instanceof Node) {
+
+				$node = $this->getParentUntilFound($node, $type);
+			}
+		}
+
+		return $node;
+	}
+
+	/**
+	 * @param Node $node
+	 *
+	 * @return string
+	 */
+	public function getIdentifierName(Node $node): string
+	{
+		$name = '';
+		if ($node instanceof Node\Identifier
+			|| $node instanceof VarLikeIdentifier) {
+
+			$name = $node->name;
+		}
+
+		return $name;
+	}
+
+	/**
+	 * @param Node        $node
+	 * @param string|null $name
+	 *
+	 * @return string
+	 */
+	public function getMatchedMethodName(Node $node, string $name = null): string
+	{
+		global $isMethodGathering, $gatheredMethods;
+
+		$return = '';
+		if (!$isMethodGathering
+			&& $gatheredMethods) {
+
+			$method = $this->getParentClassMethod($node);
+			if ($method) {
+
+				if (!$name
+					&& isset($node->name)) {
+
+					$name = $this->getIdentifierName($node->name);
+				}
+				if ($name) {
+
+					$class     = false;
+					$classNode = $this->getParentClass($node);
+					$namespace = $this->getParentNamespace($classNode);
+					$comments  = $this->getParsedDocComment($method, false);
+					if ($comments && is_array($comments)) {
+
+						$found = null;
+						foreach ($comments as $comment) {
+
+							if ($comment->getMethod() == $name) {
+
+								$found = $comment;
+								break;
+							} else if ($comment->isOrigin()) {
+
+								$found = $comment;
+							}
+						}
+
+						if ($found instanceof Comment) {
+
+							$class = $found->getClass();
+						}
+						if ($comments) {
+							if (!$class) {
+
+								$class = $namespace;
+							} else if ($classNode) {
+
+								$classname = $this->getIdentifierName($classNode->name);
+								if ($classname === $class) {
+
+									$class = $namespace;
+								}
+							}
+							if (isset($gatheredMethods[$class][$name])
+								&& $gatheredMethods[$class][$name]) {
+
+								$return = $gatheredMethods[$class][$name];
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return $return;
+	}
+
+	/**
+	 * @param Node   $node
+	 * @param string $onlyOrigin
+	 *
+	 * @return Comment[]|Comment|null
+	 */
+	public function getParsedDocComment(Node $node, $onlyOrigin = true)
+	{
+		global $docParser;
+		$return = [];
+		if ($docParser instanceof DocBlockFactory) {
+
+			$doc = $node->getDocComment();
+			if ($doc instanceof Doc
+				&& ($docText = $doc->getText())) {
+
+				$parsed = $docParser->create($docText);
+				$return = $parsed->getTagsByName(Comment::NAME);
+				if ($onlyOrigin) {
+
+					foreach ($return as $item) {
+						if ($item instanceof Comment) {
+
+							if ($item->isOrigin()) {
+
+								$return = $item;
+								break;
+							}
+						}
+					}
+					if (!$return instanceof Comment) {
+
+						$return = null;
+					}
+				}
+			}
+		}
+
+		return $return;
+	}
+
 }
