@@ -11,7 +11,6 @@ use PhpParser\Error;
 use PhpParser\Node\Stmt\Use_;
 use PhpParser\NodeTraverser;
 use PhpParser\ParserFactory;
-use PhpParser\PrettyPrinter\Standard;
 
 /**
  * Class Obfuscator
@@ -266,7 +265,7 @@ class Obfuscator extends Container
 	 */
 	private function obfuscate(string $filename): ?string
 	{
-		global $config, $parser, $prettyPrinter, $traverser;
+		global $config, $parser, $prettyPrinter, $traverser, $isMethodGathering;
 
 		$return = null;
 		if ($config instanceof Config) {
@@ -285,19 +284,25 @@ class Obfuscator extends Container
 
 			try {
 
-//				$source = php_strip_whitespace($filename);
-//				if ($source == '') {
-//
-//					if ($config->isAllowOverwriteEmptyFiles()) {
-//
-//						return $source;
-//					}
-//					throw new Exception("Error obfuscating [$SrcFilename]: php_strip_whitespace returned an empty string!");
-//				}
-				fprintf(STDERR, "Obfuscating %s%s", $SrcFilename, PHP_EOL);
-				try {
+				if ($isMethodGathering) {
 
 					$source = implode('', $source);
+				} else {
+
+					$source = php_strip_whitespace($filename);
+					if ($source == '') {
+
+						if ($config->isAllowOverwriteEmptyFiles()) {
+
+							return $source;
+						}
+						throw new Exception("Error obfuscating [$SrcFilename]: php_strip_whitespace returned an empty string!");
+					}
+					fprintf(STDERR, "Obfuscating %s%s", $SrcFilename, PHP_EOL);
+				}
+				try {
+
+
 					// PHP-Parser returns the syntax tree
 					$stmts = $parser->parse($source);
 				} catch (Error $e) {

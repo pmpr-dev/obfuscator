@@ -15,12 +15,17 @@ use Webmozart\Assert\Assert;
  */
 class Comment extends BaseTag implements StaticMethod
 {
-	const NAME = 'obfuscator';
+	const NAME = 'fescate';
 
 	/**
 	 * @var string
 	 */
 	protected $name = self::NAME;
+
+	/**
+	 * @var bool
+	 */
+	protected bool $unique = false;
 
 	/**
 	 * @var string|null
@@ -85,11 +90,23 @@ class Comment extends BaseTag implements StaticMethod
 
 					if (property_exists($this, $key)) {
 
+						if ($key == 'unique') {
+
+							$value = true;
+						}
 						$this->{$key} = $value;
 					}
 				}
 			}
 		}
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function isUnique(): bool
+	{
+		return $this->unique;
 	}
 
 	/**

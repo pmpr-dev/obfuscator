@@ -7,8 +7,6 @@ use Obfuscator\Config;
 use Obfuscator\Interfaces\ConstantInterface;
 use Obfuscator\Scrambler;
 use Obfuscator\Traits\UtilityTrait;
-use phpDocumentor\Reflection\DocBlockFactory;
-use PhpParser\Comment\Doc;
 use PhpParser\Node;
 use PhpParser\Node\VarLikeIdentifier;
 use PhpParser\NodeVisitorAbstract;
@@ -1168,7 +1166,11 @@ class Visitor extends NodeVisitorAbstract implements ConstantInterface
 							$name = $this->getIdentifierName($node->name);
 							if ($this->isValidValue($name)) {
 
-								$gatheredMethods[$this->currentNamespace][$name] = $comment->getReplace();
+								$gatheredMethods[$this->currentNamespace][$name] = $comment;
+								if ($comment->isUnique()) {
+
+									$gatheredMethods[$name] = $comment;
+								}
 							}
 						}
 					}

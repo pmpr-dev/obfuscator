@@ -342,8 +342,20 @@ class Utility implements ConstantInterface
 							if (isset($gatheredMethods[$class][$name])
 								&& $gatheredMethods[$class][$name]) {
 
-								$return = $gatheredMethods[$class][$name];
+								$tag = $gatheredMethods[$class][$name];
+								if ($tag instanceof Comment) {
+
+									$return = $tag->getReplace();
+								}
 							}
+						}
+					} else if (isset($gatheredMethods[$name])
+						&& $gatheredMethods[$name]) {
+
+						$tag = $gatheredMethods[$name];
+						if ($tag instanceof Comment) {
+
+							$return = $tag->getReplace();
 						}
 					}
 				}
