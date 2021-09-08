@@ -5,6 +5,7 @@ namespace Obfuscator\Parser;
 use Exception;
 use Obfuscator\Config;
 use Obfuscator\Interfaces\ConstantInterface;
+use Obfuscator\Scrambler;
 use Obfuscator\Traits\UtilityTrait;
 use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Expr\ArrayItem;
@@ -46,32 +47,41 @@ class PrettyPrinter extends Standard implements ConstantInterface
 	public function pScalar_String(String_ $node): string
 	{
 		global $config;
-		$string = $node->value;
-		if ($this->isCallbackString($node)) {
+		$result = null;
+		if ($config instanceof Config) {
 
-			if ($matched = $this->getUtility()->getMatchedMethodName($node, $string)) {
+			if ($this->isCallbackString($node)) {
 
-				$string      = $matched;
-				$node->value = $matched;
+				global $scrambles;
+				$scramble = $scrambles[self::METHOD_TYPE] ?? null;
+				if ($scramble instanceof Scrambler) {
+
+					$value = $node->value;
+					if (!$config->isIgnoreSnakeCaseMethods()
+						|| !$this->getUtility()->isSnakeCase($value)) {
+
+						$node->value = $scramble->scramble($value);
+					}
+				}
+			}
+			$string = $node->value;
+			if ($config->isObfuscateString()) {
+
+				$result = $this->obfuscateString($string);
+				if (!strlen($result)) {
+
+					$result = "''";
+				} else {
+
+					$result = "\"{$result}\"";
+				}
 			}
 		}
 
-		if ($config instanceof Config
-			&& $config->isObfuscateString()) {
-
-			$result = $this->obfuscateString($string);
-			if (!strlen($result)) {
-
-				$result = "''";
-			} else {
-
-				$result = "\"{$result}\"";
-			}
-		} else {
+		if (!$result) {
 
 			$result = parent::pScalar_String($node);
 		}
-
 		return $result;
 	}
 

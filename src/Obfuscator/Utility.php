@@ -281,129 +281,167 @@ class Utility implements ConstantInterface
 	}
 
 	/**
-	 * @param Node        $node
-	 * @param string|null $name
+	 * @param $string
 	 *
-	 * @return string
+	 * @return bool
 	 */
-	public function getMatchedMethodName(Node $node, string $name = null): string
+	public function isSnakeCase($string): bool
 	{
-		global $isMethodGathering, $gatheredMethods;
-
-		$return = '';
-		if (!$isMethodGathering
-			&& $gatheredMethods) {
-
-			$method = $this->getParentClassMethod($node);
-			if ($method) {
-
-				if (!$name
-					&& isset($node->name)) {
-
-					$name = $this->getIdentifierName($node->name);
-				}
-				if ($name) {
-
-					$class     = false;
-					$classNode = $this->getParentClass($node);
-					$namespace = $this->getParentNamespace($classNode);
-					$comments  = $this->getParsedDocComment($method, false);
-					if ($comments && is_array($comments)) {
-
-						$found = null;
-						foreach ($comments as $comment) {
-
-							if ($comment->getMethod() == $name) {
-
-								$found = $comment;
-								break;
-							} else if ($comment->isOrigin()) {
-
-								$found = $comment;
-							}
-						}
-
-						if ($found instanceof Comment) {
-
-							$class = $found->getClass();
-						}
-						if ($comments) {
-							if (!$class) {
-
-								$class = $namespace;
-							} else if ($classNode) {
-
-								$classname = $this->getIdentifierName($classNode->name);
-								if ($classname === $class) {
-
-									$class = $namespace;
-								}
-							}
-							if (isset($gatheredMethods[$class][$name])
-								&& $gatheredMethods[$class][$name]) {
-
-								$tag = $gatheredMethods[$class][$name];
-								if ($tag instanceof Comment) {
-
-									$return = $tag->getReplace();
-								}
-							}
-						}
-					} else if (isset($gatheredMethods[$name])
-						&& $gatheredMethods[$name]) {
-
-						$tag = $gatheredMethods[$name];
-						if ($tag instanceof Comment) {
-
-							$return = $tag->getReplace();
-						}
-					}
-				}
-			}
-		}
-
-		return $return;
+		return strpos($string, '_') !== false;
 	}
 
 	/**
-	 * @param Node   $node
-	 * @param string $onlyOrigin
+	 * @param Node $node
 	 *
-	 * @return Comment[]|Comment|null
+	 * @return bool
 	 */
-	public function getParsedDocComment(Node $node, $onlyOrigin = true)
+	public function isObfuscatable(Node $node): bool
+	{
+		global $config;
+
+		$isObfuscate = true;
+		if ($config instanceof Config) {
+			if ($config->isIgnoreSnakeCaseMethods()) {
+
+				if ($node instanceof Node\Stmt\ClassMethod
+					|| $node instanceof Node\Expr\MethodCall
+					|| $node instanceof Node\Expr\StaticCall) {
+
+					$name = $this->getIdentifierName($node->name);
+					if ($this->isSnakeCase($name)) {
+
+						$isObfuscate = false;
+					}
+				}
+			}
+			if ($isObfuscate) {
+
+				$isObfuscate = !$this->hasExcludeDocComment($node);
+			}
+		}
+
+		return $isObfuscate;
+	}
+
+	/**
+	 * @param Node $node
+	 *
+	 * @return Doc|null
+	 */
+	public function getDocComment(Node $node): ?Doc
+	{
+		$doc = $node->getDocComment();
+		if (!$doc) {
+
+			$parent = $node->getAttribute('parent');
+			if ($parent) {
+
+				if (($node instanceof Node\Expr\MethodCall
+						|| $node instanceof Node\Expr\StaticCall)
+					&& ($parent instanceof Node\Expr\Assign
+						|| $parent instanceof Node\Stmt\If_
+						|| $parent instanceof Node\Stmt\Return_
+						|| $parent instanceof Node\Stmt\Switch_
+						|| $parent instanceof Node\Stmt\Foreach_
+						|| $parent instanceof Node\Expr\MethodCall
+						|| $parent instanceof Node\Expr\StaticCall)) {
+
+					$doc = $this->getDocComment($parent);
+				}
+			}
+		}
+		return $doc;
+	}
+
+	/**
+	 * @param Node $node
+	 *
+	 * @return bool
+	 */
+	public function hasExcludeDocComment(Node $node): bool
 	{
 		global $docParser;
-		$return = [];
+		$hasExclude = false;
 		if ($docParser instanceof DocBlockFactory) {
 
-			$doc = $node->getDocComment();
+			$doc = $this->getDocComment($node);
 			if ($doc instanceof Doc
 				&& ($docText = $doc->getText())) {
 
 				$parsed = $docParser->create($docText);
-				$return = $parsed->getTagsByName(Comment::NAME);
-				if ($onlyOrigin) {
+				$tags   = $parsed->getTagsByName(Comment::NAME);
+				foreach ($tags as $tag) {
 
-					foreach ($return as $item) {
-						if ($item instanceof Comment) {
+					if ($tag instanceof Comment) {
 
-							if ($item->isOrigin()) {
+						if ($tag->isExclude()
+							&& $this->checkCommentTarget($node, $tag)) {
 
-								$return = $item;
-								break;
-							}
+							$hasExclude = true;
+							break;
 						}
-					}
-					if (!$return instanceof Comment) {
-
-						$return = null;
 					}
 				}
 			}
 		}
 
-		return $return;
+		return $hasExclude;
 	}
 
+	/**
+	 * @param Node    $node
+	 * @param Comment $tag
+	 *
+	 * @return bool
+	 */
+	public function checkCommentTarget(Node $node, Comment $tag): bool
+	{
+		$check = true;
+		if ($node instanceof Node\Expr\MethodCall
+			|| $node instanceof Node\Expr\StaticCall) {
+
+			$name   = $this->getIdentifierName($node->name);
+			$target = $tag->getTarget();
+			$count  = count($target);
+			if (count($target) <= 1) {
+
+				$sequence = array_reverse($this->getCallSequence($node));
+				if ($count == 1) {
+
+					$target   = $target[0];
+					$sequence = array_slice($sequence, array_search($target, $sequence), null, true);
+					$check    = in_array($name, $sequence);
+				} else {
+
+					// just exclude last call
+					$check = end($sequence) == $name;
+				}
+			} else {
+
+				$check = in_array($name, $target);
+			}
+		}
+
+		return $check;
+	}
+
+	/**
+	 * @param Node\Expr\StaticCall|Node\Expr\MethodCall $node
+	 * @param array                                     $sequence
+	 *
+	 * @return array
+	 */
+	public function getCallSequence($node, $sequence = []): array
+	{
+		$parent = $node->getAttribute('parent');
+		if ($parent instanceof Node\Expr\MethodCall
+			|| $parent instanceof Node\Expr\StaticCall) {
+
+			$sequence = $this->getCallSequence($parent, $sequence);
+		}
+
+		$sequence[] = $this->getIdentifierName($node->name);
+
+		return $sequence;
+	}
 }

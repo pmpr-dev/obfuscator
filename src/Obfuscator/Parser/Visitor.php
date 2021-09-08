@@ -99,7 +99,7 @@ class Visitor extends NodeVisitorAbstract implements ConstantInterface
 	 */
 	public function enterNode(Node $node)
 	{
-		global $config, $isMethodGathering;
+		global $config;
 
 		if (count($this->nodeStack)) {
 
@@ -108,22 +108,19 @@ class Visitor extends NodeVisitorAbstract implements ConstantInterface
 
 		$this->nodeStack[] = $node;
 
-		if (!$isMethodGathering) {
+		if ($config instanceof Config
+			&& $config->isObfuscateLoopStmt()) {
 
-			if ($config instanceof Config
-				&& $config->isObfuscateLoopStmt()) {
+			$scrambler = $this->getScrambler(self::LABEL_TYPE);
+			if ($node instanceof Node\Stmt\For_
+				|| $node instanceof Node\Stmt\Do_
+				|| $node instanceof Node\Stmt\While_
+				|| $node instanceof Node\Stmt\Switch_
+				|| $node instanceof Node\Stmt\Foreach_) {
 
-				$scrambler = $this->getScrambler(self::LABEL_TYPE);
-				if ($node instanceof Node\Stmt\For_
-					|| $node instanceof Node\Stmt\Do_
-					|| $node instanceof Node\Stmt\While_
-					|| $node instanceof Node\Stmt\Switch_
-					|| $node instanceof Node\Stmt\Foreach_) {
-
-					$loopBreakName     = $scrambler->scramble($scrambler->generateLabelName());
-					$loopContinueName  = $scrambler->scramble($scrambler->generateLabelName());
-					$this->loopStack[] = [$loopBreakName, $loopContinueName];
-				}
+				$loopBreakName     = $scrambler->scramble($scrambler->generateLabelName());
+				$loopContinueName  = $scrambler->scramble($scrambler->generateLabelName());
+				$this->loopStack[] = [$loopBreakName, $loopContinueName];
 			}
 		}
 
@@ -153,7 +150,7 @@ class Visitor extends NodeVisitorAbstract implements ConstantInterface
 	 */
 	public function leaveNode(Node $node)
 	{
-		global $debugMode, $isMethodGathering;
+		global $debugMode;
 
 		$nodeModified = false;
 		if ($node instanceof Node\Stmt\Class_) {
@@ -167,186 +164,119 @@ class Visitor extends NodeVisitorAbstract implements ConstantInterface
 			$this->isConstDefinition = false;
 		}
 
-		if ($isMethodGathering) {
 
-			$this->maybeObfuscateMethodName($node, $nodeModified);
-		} else {
+		$this->maybeObfuscateLabel($node, $nodeModified);
 
-			$this->maybeObfuscateLabel($node, $nodeModified);
+		$this->maybeObfuscateString($node, $nodeModified);
 
-			$this->maybeObfuscateString($node, $nodeModified);
+		$this->maybeObfuscateProperty($node, $nodeModified);
 
-			$this->maybeObfuscateProperty($node, $nodeModified);
+		$this->maybeObfuscateVariable($node, $nodeModified);
 
-			$this->maybeObfuscateVariable($node, $nodeModified);
+		$this->maybeObfuscateConstant($node, $nodeModified);
 
-			$this->maybeObfuscateConstant($node, $nodeModified);
+		$this->maybeObfuscateTraitName($node, $nodeModified);
 
-			$this->maybeObfuscateTraitName($node, $nodeModified);
+		$this->maybeObfuscateNamespace($node, $nodeModified);
 
-			$this->maybeObfuscateNamespace($node, $nodeModified);
+		$this->maybeObfuscateClassName($node, $nodeModified);
 
-			$this->maybeObfuscateClassName($node, $nodeModified);
+		$this->maybeObfuscateMethodName($node, $nodeModified);
 
-			$this->maybeObfuscateMethodName($node, $nodeModified);
+		$this->maybeObfuscateFunctionName($node, $nodeModified);
 
-			$this->maybeObfuscateFunctionName($node, $nodeModified);
+		$this->maybeObfuscateInterfaceName($node, $nodeModified);
 
-			$this->maybeObfuscateInterfaceName($node, $nodeModified);
+		$this->maybeObfuscateClassConstant($node, $nodeModified);
 
-			$this->maybeObfuscateClassConstant($node, $nodeModified);
+		$this->maybeObfuscateClassOrFunctionName($node, $nodeModified);
 
-			$this->maybeObfuscateClassOrFunctionName($node, $nodeModified);
+		if ($this->getConfig()->isObfuscateIfStmt()) {
 
-			if ($this->getConfig()->isObfuscateIfStmt()) {
+			$scrambler   = $this->getScrambler(self::LABEL_TYPE);
+			$ok2scramble = false;
+			if ($node instanceof Node\Stmt\If_) {
 
-				$scrambler   = $this->getScrambler(self::LABEL_TYPE);
-				$ok2scramble = false;
-				if ($node instanceof Node\Stmt\If_) {
+				$ok2scramble = true;
+				$condition   = $node->cond;
+				if ($condition instanceof Node\Expr\BooleanNot) {
 
-					$ok2scramble = true;
-					$condition   = $node->cond;
-					if ($condition instanceof Node\Expr\BooleanNot) {
+					$expr = $condition->expr;
+					if ($expr instanceof Node\Expr\FuncCall) {
 
-						$expr = $condition->expr;
-						if ($expr instanceof Node\Expr\FuncCall) {
+						$name = $expr->name;
+						if ($name instanceof Node\Name) {
 
-							$name = $expr->name;
-							if ($name instanceof Node\Name) {
+							if ($name->parts[0] == 'function_exists') {
 
-								if ($name->parts[0] == 'function_exists') {
-
-									$ok2scramble = false;
-								}
+								$ok2scramble = false;
 							}
 						}
 					}
 				}
+			}
 
-				if ($ok2scramble) {
+			if ($ok2scramble) {
 
-					$stmts     = $node->stmts;
-					$else      = isset($node->{'else'}) ? $node->{'else'}->stmts : null;
-					$elseif    = $node->elseifs;
-					$condition = $node->cond;
+				$stmts     = $node->stmts;
+				$else      = isset($node->{'else'}) ? $node->{'else'}->stmts : null;
+				$elseif    = $node->elseifs;
+				$condition = $node->cond;
 
-					if (isset($elseif)
-						&& count($elseif)) {
+				if (isset($elseif)
+					&& count($elseif)) {
 
-						$labelEndifName = $scrambler->scramble($scrambler->generateLabelName());
-						$labelEndif     = [new Node\Stmt\Label($labelEndifName)];
-						$gotoEndif      = [new Node\Stmt\Goto_($labelEndifName)];
+					$labelEndifName = $scrambler->scramble($scrambler->generateLabelName());
+					$labelEndif     = [new Node\Stmt\Label($labelEndifName)];
+					$gotoEndif      = [new Node\Stmt\Goto_($labelEndifName)];
 
-						$newNodes1 = [];
-						$newNodes2 = [];
+					$newNodes1 = [];
+					$newNodes2 = [];
 
+					$labelIfName = $scrambler->scramble($scrambler->generateLabelName());
+					$labelIf     = [new Node\Stmt\Label($labelIfName)];
+					$gotoIf      = [new Node\Stmt\Goto_($labelIfName)];
+					$if          = new Node\Stmt\If_($condition);
+					$if->stmts   = $gotoIf;
+					$newNodes1   = array_merge($newNodes1, [$if]);
+					$newNodes2   = array_merge($newNodes2, $labelIf, $stmts, $gotoEndif);
+
+					for ($i = 0; $i < count($elseif); ++$i) {
+						$condition   = $elseif[$i]->cond;
+						$stmts       = $elseif[$i]->stmts;
 						$labelIfName = $scrambler->scramble($scrambler->generateLabelName());
 						$labelIf     = [new Node\Stmt\Label($labelIfName)];
 						$gotoIf      = [new Node\Stmt\Goto_($labelIfName)];
 						$if          = new Node\Stmt\If_($condition);
 						$if->stmts   = $gotoIf;
 						$newNodes1   = array_merge($newNodes1, [$if]);
-						$newNodes2   = array_merge($newNodes2, $labelIf, $stmts, $gotoEndif);
+						$newNodes2   = array_merge($newNodes2, $labelIf, $stmts);
+						if ($i < count($elseif) - 1) {
 
-						for ($i = 0; $i < count($elseif); ++$i) {
-							$condition   = $elseif[$i]->cond;
-							$stmts       = $elseif[$i]->stmts;
-							$labelIfName = $scrambler->scramble($scrambler->generateLabelName());
-							$labelIf     = [new Node\Stmt\Label($labelIfName)];
-							$gotoIf      = [new Node\Stmt\Goto_($labelIfName)];
-							$if          = new Node\Stmt\If_($condition);
-							$if->stmts   = $gotoIf;
-							$newNodes1   = array_merge($newNodes1, [$if]);
-							$newNodes2   = array_merge($newNodes2, $labelIf, $stmts);
-							if ($i < count($elseif) - 1) {
-
-								$newNodes2 = array_merge($newNodes2, $gotoEndif);
-							}
+							$newNodes2 = array_merge($newNodes2, $gotoEndif);
 						}
-						if (isset($else)) {
+					}
+					if (isset($else)) {
 
-							$newNodes1 = array_merge($newNodes1, $else);
-						}
+						$newNodes1 = array_merge($newNodes1, $else);
+					}
 
-						$newNodes1 = array_merge($newNodes1, $gotoEndif);
-						$newNodes2 = array_merge($newNodes2, $labelEndif);
-						return array_merge($newNodes1, $newNodes2);
+					$newNodes1 = array_merge($newNodes1, $gotoEndif);
+					$newNodes2 = array_merge($newNodes2, $labelEndif);
+					return array_merge($newNodes1, $newNodes2);
+				} else {
+					if (isset($else)) {
+
+						$labelThenName  = $scrambler->scramble($scrambler->generateLabelName());
+						$labelThen      = [new Node\Stmt\Label($labelThenName)];
+						$gotoThen       = [new Node\Stmt\Goto_($labelThenName)];
+						$labelEndifName = $scrambler->scramble($scrambler->generateLabelName());
+						$labelEndif     = [new Node\Stmt\Label($labelEndifName)];
+						$gotoEndif      = [new Node\Stmt\Goto_($labelEndifName)];
+						$node->stmts    = $gotoThen;
+						$node->{'else'} = null;
+						return array_merge([$node], $else, $gotoEndif, $labelThen, $stmts, $labelEndif);
 					} else {
-						if (isset($else)) {
-
-							$labelThenName  = $scrambler->scramble($scrambler->generateLabelName());
-							$labelThen      = [new Node\Stmt\Label($labelThenName)];
-							$gotoThen       = [new Node\Stmt\Goto_($labelThenName)];
-							$labelEndifName = $scrambler->scramble($scrambler->generateLabelName());
-							$labelEndif     = [new Node\Stmt\Label($labelEndifName)];
-							$gotoEndif      = [new Node\Stmt\Goto_($labelEndifName)];
-							$node->stmts    = $gotoThen;
-							$node->{'else'} = null;
-							return array_merge([$node], $else, $gotoEndif, $labelThen, $stmts, $labelEndif);
-						} else {
-
-							if ($condition instanceof Node\Expr\BooleanNot) {
-
-								$newCondition = $condition->expr;
-							} else {
-
-								$newCondition = new Node\Expr\BooleanNot($condition);
-							}
-
-							$labelEndifName = $scrambler->scramble($scrambler->generateLabelName());
-							$labelEndif     = [new Node\Stmt\Label($labelEndifName)];
-							$gotoEndif      = [new Node\Stmt\Goto_($labelEndifName)];
-							$node->cond     = $newCondition;
-							$node->stmts    = $gotoEndif;
-							return array_merge([$node], $stmts, $labelEndif);
-						}
-					}
-				}
-			}
-
-			if ($this->getConfig()->isObfuscateLoopStmt()) {
-
-				$scrambler = $this->getScrambler(self::LABEL_TYPE);
-				if ($node instanceof Node\Stmt\For_) {
-
-					[$labelLoopBreakName, $labelLoopContinueName] = array_pop($this->loopStack);
-
-					$init = null;
-					if (isset($node->init) && count($node->init)) {
-
-						foreach ($node->init as $tmp) {
-
-							$init[] = new Node\Stmt\Expression($tmp);
-						}
-					}
-
-					$condition = (isset($node->cond) && count($node->cond)) ? $node->cond[0] : null;
-
-					$loop = null;
-					if (isset($node->loop)
-						&& count($node->loop)) {
-
-						foreach ($node->loop as $tmp) {
-
-							$loop[] = new Node\Stmt\Expression($tmp);
-						}
-					}
-
-					$stmts         = $node->stmts;
-					$labelLoopName = $scrambler->scramble($scrambler->generateLabelName());
-					$labelLoop     = [new Node\Stmt\Label($labelLoopName)];
-					$gotoLoop      = [new Node\Stmt\Goto_($labelLoopName)];
-					$labelBreak    = [new Node\Stmt\Label($labelLoopBreakName)];
-					$gotoBreak     = [new Node\Stmt\Goto_($labelLoopBreakName)];
-					$labelContinue = [new Node\Stmt\Label($labelLoopContinueName)];
-
-					$newNode = [];
-					if (isset($init)) {
-
-						$newNode = array_merge($newNode, $init);
-					}
-					$newNode = array_merge($newNode, $labelLoop);
-					if (isset($condition)) {
 
 						if ($condition instanceof Node\Expr\BooleanNot) {
 
@@ -356,54 +286,61 @@ class Visitor extends NodeVisitorAbstract implements ConstantInterface
 							$newCondition = new Node\Expr\BooleanNot($condition);
 						}
 
-						$if        = new Node\Stmt\If_($newCondition);
-						$if->stmts = $gotoBreak;
-						$newNode   = array_merge($newNode, [$if]);
+						$labelEndifName = $scrambler->scramble($scrambler->generateLabelName());
+						$labelEndif     = [new Node\Stmt\Label($labelEndifName)];
+						$gotoEndif      = [new Node\Stmt\Goto_($labelEndifName)];
+						$node->cond     = $newCondition;
+						$node->stmts    = $gotoEndif;
+						return array_merge([$node], $stmts, $labelEndif);
 					}
-					if (isset($stmts)) {
+				}
+			}
+		}
 
-						$newNode = array_merge($newNode, $stmts);
+		if ($this->getConfig()->isObfuscateLoopStmt()) {
+
+			$scrambler = $this->getScrambler(self::LABEL_TYPE);
+			if ($node instanceof Node\Stmt\For_) {
+
+				[$labelLoopBreakName, $labelLoopContinueName] = array_pop($this->loopStack);
+
+				$init = null;
+				if (isset($node->init) && count($node->init)) {
+
+					foreach ($node->init as $tmp) {
+
+						$init[] = new Node\Stmt\Expression($tmp);
 					}
-					$newNode = array_merge($newNode, $labelContinue);
-					if (isset($loop)) {
-
-						$newNode = array_merge($newNode, $loop);
-					}
-
-					$newNode = array_merge($newNode, $gotoLoop);
-					return array_merge($newNode, $labelBreak);
 				}
 
-				if ($node instanceof Node\Stmt\Foreach_) {
+				$condition = (isset($node->cond) && count($node->cond)) ? $node->cond[0] : null;
 
-					[$labelLoopBreakName, $labelLoopContinueName] = array_pop($this->loopStack);
+				$loop = null;
+				if (isset($node->loop)
+					&& count($node->loop)) {
 
-					$labelBreak    = [new Node\Stmt\Label($labelLoopBreakName)];
-					$node->stmts[] = new Node\Stmt\Label($labelLoopContinueName);
-					$this->shuffleStmts($node);
-					return array_merge([$node], $labelBreak);
+					foreach ($node->loop as $tmp) {
+
+						$loop[] = new Node\Stmt\Expression($tmp);
+					}
 				}
 
-				if ($node instanceof Node\Stmt\Switch_) {
+				$stmts         = $node->stmts;
+				$labelLoopName = $scrambler->scramble($scrambler->generateLabelName());
+				$labelLoop     = [new Node\Stmt\Label($labelLoopName)];
+				$gotoLoop      = [new Node\Stmt\Goto_($labelLoopName)];
+				$labelBreak    = [new Node\Stmt\Label($labelLoopBreakName)];
+				$gotoBreak     = [new Node\Stmt\Goto_($labelLoopBreakName)];
+				$labelContinue = [new Node\Stmt\Label($labelLoopContinueName)];
 
-					[$labelLoopBreakName, $labelLoopContinueName] = array_pop($this->loopStack);
+				$newNode = [];
+				if (isset($init)) {
 
-					$labelBreak    = [new Node\Stmt\Label($labelLoopBreakName)];
-					$labelContinue = [new Node\Stmt\Label($labelLoopContinueName)];
-
-					return array_merge([$node], $labelContinue, $labelBreak);
+					$newNode = array_merge($newNode, $init);
 				}
+				$newNode = array_merge($newNode, $labelLoop);
+				if (isset($condition)) {
 
-				if ($node instanceof Node\Stmt\While_) {
-
-					[$labelLoopBreakName, $labelLoopContinueName] = array_pop($this->loopStack);
-
-					$condition     = $node->cond;
-					$stmts         = $node->stmts;
-					$labelBreak    = [new Node\Stmt\Label($labelLoopBreakName)];
-					$gotoBreak     = [new Node\Stmt\Goto_($labelLoopBreakName)];
-					$labelContinue = [new Node\Stmt\Label($labelLoopContinueName)];
-					$gotoContinue  = [new Node\Stmt\Goto_($labelLoopContinueName)];
 					if ($condition instanceof Node\Expr\BooleanNot) {
 
 						$newCondition = $condition->expr;
@@ -414,105 +351,160 @@ class Visitor extends NodeVisitorAbstract implements ConstantInterface
 
 					$if        = new Node\Stmt\If_($newCondition);
 					$if->stmts = $gotoBreak;
-					return array_merge($labelContinue, [$if], $stmts, $gotoContinue, $labelBreak);
+					$newNode   = array_merge($newNode, [$if]);
+				}
+				if (isset($stmts)) {
+
+					$newNode = array_merge($newNode, $stmts);
+				}
+				$newNode = array_merge($newNode, $labelContinue);
+				if (isset($loop)) {
+
+					$newNode = array_merge($newNode, $loop);
 				}
 
-				if ($node instanceof Node\Stmt\Do_) {
+				$newNode = array_merge($newNode, $gotoLoop);
+				return array_merge($newNode, $labelBreak);
+			}
 
-					[$labelLoopBreakName, $labelLoopContinueName] = array_pop($this->loopStack);
+			if ($node instanceof Node\Stmt\Foreach_) {
 
-					$condition     = $node->cond;
-					$stmts         = $node->stmts;
-					$labelBreak    = [new Node\Stmt\Label($labelLoopBreakName)];
-					$labelContinue = [new Node\Stmt\Label($labelLoopContinueName)];
-					$gotoContinue  = [new Node\Stmt\Goto_($labelLoopContinueName)];
-					$if            = new Node\Stmt\If_($condition);
-					$if->stmts     = $gotoContinue;
+				[$labelLoopBreakName, $labelLoopContinueName] = array_pop($this->loopStack);
 
-					return array_merge($labelContinue, $stmts, [$if], $labelBreak);
+				$labelBreak    = [new Node\Stmt\Label($labelLoopBreakName)];
+				$node->stmts[] = new Node\Stmt\Label($labelLoopContinueName);
+				$this->shuffleStmts($node);
+				return array_merge([$node], $labelBreak);
+			}
+
+			if ($node instanceof Node\Stmt\Switch_) {
+
+				[$labelLoopBreakName, $labelLoopContinueName] = array_pop($this->loopStack);
+
+				$labelBreak    = [new Node\Stmt\Label($labelLoopBreakName)];
+				$labelContinue = [new Node\Stmt\Label($labelLoopContinueName)];
+
+				return array_merge([$node], $labelContinue, $labelBreak);
+			}
+
+			if ($node instanceof Node\Stmt\While_) {
+
+				[$labelLoopBreakName, $labelLoopContinueName] = array_pop($this->loopStack);
+
+				$condition     = $node->cond;
+				$stmts         = $node->stmts;
+				$labelBreak    = [new Node\Stmt\Label($labelLoopBreakName)];
+				$gotoBreak     = [new Node\Stmt\Goto_($labelLoopBreakName)];
+				$labelContinue = [new Node\Stmt\Label($labelLoopContinueName)];
+				$gotoContinue  = [new Node\Stmt\Goto_($labelLoopContinueName)];
+				if ($condition instanceof Node\Expr\BooleanNot) {
+
+					$newCondition = $condition->expr;
+				} else {
+
+					$newCondition = new Node\Expr\BooleanNot($condition);
 				}
 
-				if ($node instanceof Node\Stmt\Break_) {
+				$if        = new Node\Stmt\If_($newCondition);
+				$if->stmts = $gotoBreak;
+				return array_merge($labelContinue, [$if], $stmts, $gotoContinue, $labelBreak);
+			}
 
-					$count = 1;
-					if (isset($node->num)) {
-						if ($node->num instanceof Node\Scalar\LNumber) {
+			if ($node instanceof Node\Stmt\Do_) {
 
-							$count = $node->num->value;
-						} else {
+				[$labelLoopBreakName, $labelLoopContinueName] = array_pop($this->loopStack);
 
-							throw new Exception("Error: your use of break statement is not compatible with obfuscator!" . PHP_EOL . "\tAt max 1 literal numeric parameter is allowed...");
-						}
+				$condition     = $node->cond;
+				$stmts         = $node->stmts;
+				$labelBreak    = [new Node\Stmt\Label($labelLoopBreakName)];
+				$labelContinue = [new Node\Stmt\Label($labelLoopContinueName)];
+				$gotoContinue  = [new Node\Stmt\Goto_($labelLoopContinueName)];
+				$if            = new Node\Stmt\If_($condition);
+				$if->stmts     = $gotoContinue;
+
+				return array_merge($labelContinue, $stmts, [$if], $labelBreak);
+			}
+
+			if ($node instanceof Node\Stmt\Break_) {
+
+				$count = 1;
+				if (isset($node->num)) {
+					if ($node->num instanceof Node\Scalar\LNumber) {
+
+						$count = $node->num->value;
+					} else {
+
+						throw new Exception("Error: your use of break statement is not compatible with obfuscator!" . PHP_EOL . "\tAt max 1 literal numeric parameter is allowed...");
 					}
-					if (count($this->loopStack) - $count < 0) {
-
-						throw new Exception("Error: break statement outside loop found!;" . PHP_EOL . (($debugMode == 2) ? print_r($node, true) : ''));
-					}
-
-					[$labelLoopBreakName,] = $this->loopStack[count($this->loopStack) - $count];
-
-					$node         = new Node\Stmt\Goto_($labelLoopBreakName);
-					$nodeModified = true;
 				}
-				if ($node instanceof Node\Stmt\Continue_) {
+				if (count($this->loopStack) - $count < 0) {
 
-					$count = 1;
-					if (isset($node->num)) {
+					throw new Exception("Error: break statement outside loop found!;" . PHP_EOL . (($debugMode == 2) ? print_r($node, true) : ''));
+				}
 
-						if ($node->num instanceof Node\Scalar\LNumber) {
+				[$labelLoopBreakName,] = $this->loopStack[count($this->loopStack) - $count];
 
-							$count = $node->num->value;
-						} else {
+				$node         = new Node\Stmt\Goto_($labelLoopBreakName);
+				$nodeModified = true;
+			}
+			if ($node instanceof Node\Stmt\Continue_) {
 
-							throw new Exception("Error: your use of continue statement is not compatible with yakpro-po!" . PHP_EOL . "\tAt max 1 literal numeric parameter is allowed...");
-						}
+				$count = 1;
+				if (isset($node->num)) {
+
+					if ($node->num instanceof Node\Scalar\LNumber) {
+
+						$count = $node->num->value;
+					} else {
+
+						throw new Exception("Error: your use of continue statement is not compatible with yakpro-po!" . PHP_EOL . "\tAt max 1 literal numeric parameter is allowed...");
 					}
+				}
 
-					if (count($this->loopStack) - $count < 0) {
+				if (count($this->loopStack) - $count < 0) {
 
-						throw new Exception("Error: continue statement outside loop found!;" . PHP_EOL . (($debugMode == 2) ? print_r($node, true) : ''));
-					}
-					[, $labelLoopContinueName] = $this->loopStack[count($this->loopStack) - $count];
-					$node         = new Node\Stmt\Goto_($labelLoopContinueName);
+					throw new Exception("Error: continue statement outside loop found!;" . PHP_EOL . (($debugMode == 2) ? print_r($node, true) : ''));
+				}
+				[, $labelLoopContinueName] = $this->loopStack[count($this->loopStack) - $count];
+				$node         = new Node\Stmt\Goto_($labelLoopContinueName);
+				$nodeModified = true;
+			}
+		}
+
+		if ($this->getConfig()->isShuffleStmts()) {
+			if ($node instanceof Node\Stmt\If_
+				|| $node instanceof Node\Stmt\Case_
+				|| $node instanceof Node\Stmt\Catch_
+				|| $node instanceof Node\Expr\Closure
+				|| $node instanceof Node\Stmt\Foreach_
+				|| $node instanceof Node\Stmt\TryCatch
+				|| $node instanceof Node\Stmt\Function_
+				|| $node instanceof Node\Stmt\ClassMethod) {
+
+				if ($this->shuffleStmts($node)) {
+
 					$nodeModified = true;
 				}
 			}
 
-			if ($this->getConfig()->isShuffleStmts()) {
-				if ($node instanceof Node\Stmt\If_
-					|| $node instanceof Node\Stmt\Case_
-					|| $node instanceof Node\Stmt\Catch_
-					|| $node instanceof Node\Expr\Closure
-					|| $node instanceof Node\Stmt\Foreach_
-					|| $node instanceof Node\Stmt\TryCatch
-					|| $node instanceof Node\Stmt\Function_
-					|| $node instanceof Node\Stmt\ClassMethod) {
+			if ($node instanceof Node\Stmt\If_) {
 
-					if ($this->shuffleStmts($node)) {
+				if (isset($node->{'else'})) {
+
+					if ($this->shuffleStmts($node->{'else'})) {
 
 						$nodeModified = true;
 					}
 				}
 
-				if ($node instanceof Node\Stmt\If_) {
+				$elseif = $node->elseifs;
+				if (isset($elseif) && count($elseif)) {
 
-					if (isset($node->{'else'})) {
+					for ($i = 0; $i < count($elseif); ++$i) {
 
-						if ($this->shuffleStmts($node->{'else'})) {
+						if ($this->shuffleStmts($elseif[$i])) {
 
 							$nodeModified = true;
-						}
-					}
-
-					$elseif = $node->elseifs;
-					if (isset($elseif) && count($elseif)) {
-
-						for ($i = 0; $i < count($elseif); ++$i) {
-
-							if ($this->shuffleStmts($elseif[$i])) {
-
-								$nodeModified = true;
-							}
 						}
 					}
 				}
@@ -1143,46 +1135,18 @@ class Visitor extends NodeVisitorAbstract implements ConstantInterface
 	 */
 	private function maybeObfuscateMethodName(Node &$node, &$nodeModified = false)
 	{
-		global $isMethodGathering, $gatheredMethods;
+		if ($this->getConfig()->isObfuscateMethodName()) {
 
-		if ($node instanceof Node\Stmt\ClassMethod
-			|| $node instanceof Node\Expr\MethodCall
-			|| $node instanceof Node\Expr\StaticCall) {
+			if ($node instanceof Node\Stmt\ClassMethod
+				|| $node instanceof Node\Expr\MethodCall
+				|| $node instanceof Node\Expr\StaticCall) {
 
-			if ($this->getConfig()->isObfuscateMethodName()) {
+				if ($this->getUtility()->isObfuscatable($node)) {
 
-				$nodeModified = $this->scrambleIdentifier($node, self::METHOD_TYPE);
-			} else if ($isMethodGathering) {
-
-				if ($node instanceof Node\Stmt\ClassMethod) {
-
-					$comment = $this->getUtility()->getParsedDocComment($node);
-
-					if ($comment instanceof Comment) {
-
-						$scrambler = $this->getScrambler(self::METHOD_TYPE);
-						if ($scrambler) {
-
-							$name = $this->getIdentifierName($node->name);
-							if ($this->isValidValue($name)) {
-
-								$gatheredMethods[$this->currentNamespace][$name] = $comment;
-								if ($comment->isUnique()) {
-
-									$gatheredMethods[$name] = $comment;
-								}
-							}
-						}
-					}
-				}
-			} else {
-
-				if ($matched = $this->getUtility()->getMatchedMethodName($node)) {
-
-					$this->setIdentifierName($node->name, $matched);
-					$nodeModified = true;
+					$nodeModified = $this->scrambleIdentifier($node, self::METHOD_TYPE);
 				}
 			}
+
 		}
 	}
 
@@ -1316,46 +1280,6 @@ class Visitor extends NodeVisitorAbstract implements ConstantInterface
 				}
 			}
 		}
-	}
-
-	/**
-	 * @param $node
-	 *
-	 * @return bool
-	 */
-	private function isValidNamespace($node): bool
-	{
-		$parent  = false;
-		$isValid = true;
-		if ($node instanceof Node\Stmt\ClassMethod
-			|| $node instanceof Node\Stmt\Class_) {
-
-			$parent = $node->getAttribute('parent');
-		} else if ($node instanceof Node\Stmt\Namespace_) {
-
-			if ($prefixes = $this->getConfig()->getIncludeNamespacesPrefix()) {
-
-				$isValid   = false;
-				$namespace = implode('\\', $node->name->parts);
-				if ($namespace) {
-
-					foreach ($prefixes as $prefix) {
-
-						if (substr($namespace, 0, strlen($prefix)) === $prefix) {
-
-							$isValid = true;
-							break;
-						}
-					}
-				}
-			}
-		}
-		if ($parent) {
-
-			$isValid = $this->isValidNamespace($node);
-		}
-
-		return $isValid;
 	}
 
 	/**

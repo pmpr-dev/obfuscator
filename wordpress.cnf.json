@@ -7,12 +7,6 @@
   "scramble_mode": "hash",
   "scramble_length": 5,
 
-  "include_namespaces_prefix": [
-    "Pmpr/"
-  ],
-
-  "ignore_camel_case": true,
-
   "ignore_traits": [],
   "ignore_labels": [],
   "ignore_methods": [],
@@ -61,6 +55,8 @@
   "ignore_interfaces_prefix": [],
   "ignore_namespaces_prefix": [],
 
+  "ignore_snake_case_methods": true,
+
   "obfuscate_label": true,
   "obfuscate_string": true,
   "obfuscate_if_stmt": true,
@@ -72,12 +68,10 @@
   "obfuscate_namespace": false,
   "obfuscate_class_name": false,
   "obfuscate_trait_name": false,
-  "obfuscate_method_name": false,
+  "obfuscate_method_name": true,
   "obfuscate_function_name": false,
   "obfuscate_interface_name": false,
   "obfuscate_class_constant": false,
-
-  "obfuscate_method_name_by_annotation": true,
 
   "shuffle_stmts": true,
   "shuffle_stmts_chunk_mode": "fixed",
@@ -87,6 +81,7 @@
   "silent": false,
   "confirm": false,
   "abort_on_error": true,
+  "remove_comment": false,
   "strip_indentation": false,
 
   "source_directory": null,

@@ -23,24 +23,14 @@ class Comment extends BaseTag implements StaticMethod
 	protected $name = self::NAME;
 
 	/**
+	 * @var array
+	 */
+	protected array $target = [];
+
+	/**
 	 * @var bool
 	 */
-	protected bool $unique = false;
-
-	/**
-	 * @var string|null
-	 */
-	protected ?string $class = null;
-
-	/**
-	 * @var string|null
-	 */
-	protected ?string $method = null;
-
-	/**
-	 * @var string|null
-	 */
-	protected ?string $replace = null;
+	protected bool $exclude = true;
 
 	/**
 	 * @param string                  $body
@@ -90,9 +80,12 @@ class Comment extends BaseTag implements StaticMethod
 
 					if (property_exists($this, $key)) {
 
-						if ($key == 'unique') {
+						if (in_array($key, ['exclude'])) {
 
 							$value = true;
+						} else if ($key === 'target') {
+
+							$value = array_map('trim', explode(',', $value));
 						}
 						$this->{$key} = $value;
 					}
@@ -102,51 +95,19 @@ class Comment extends BaseTag implements StaticMethod
 	}
 
 	/**
-	 * @return bool
+	 * @return array
 	 */
-	public function isUnique(): bool
+	public function getTarget(): array
 	{
-		return $this->unique;
-	}
-
-	/**
-	 * @return string|null
-	 */
-	public function getClass(): ?string
-	{
-		return $this->class;
-	}
-
-	/**
-	 * @return string|null
-	 */
-	public function getMethod(): ?string
-	{
-		return $this->method;
-	}
-
-	/**
-	 * @return string|null
-	 */
-	public function getReplace(): ?string
-	{
-		return $this->replace;
+		return $this->target;
 	}
 
 	/**
 	 * @return bool
 	 */
-	public function isOrigin(): bool
+	public function isExclude(): bool
 	{
-		return !empty($this->getReplace());
-	}
-
-	/**
-	 * @return bool
-	 */
-	public function isDestination(): bool
-	{
-		return !$this->isOrigin();
+		return $this->exclude;
 	}
 
 	/**

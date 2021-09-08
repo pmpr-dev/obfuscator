@@ -33,9 +33,7 @@ class Obfuscator extends Container
 	 */
 	private function init(array $args = [])
 	{
-		global $config, $scramblers, $parser, $prettyPrinter, $traverser, $isMethodGathering, $gatheredMethods, $docParser;
-
-		$gatheredMethods = [];
+		global $config, $scramblers, $parser, $prettyPrinter, $traverser, $docParser;
 
 		$config = Config::getInstance($args);
 		$config->validate();
@@ -79,17 +77,7 @@ class Obfuscator extends Container
 		$traverser = new NodeTraverser();
 		$traverser->addVisitor(new Visitor($config, $scramblers));
 
-		$isMethodGathering = false;
-		if ($config->isObfuscateMethodNameByAnnotation()) {
-
-			$isMethodGathering = true;
-		}
 		$this->obfuscateDirectory("{$path}/obfuscated", $config->getSourceDirectory());
-		if ($isMethodGathering) {
-
-			$isMethodGathering = false;
-			$this->obfuscateDirectory("{$path}/obfuscated", $config->getSourceDirectory());
-		}
 	}
 
 	/**
@@ -99,7 +87,7 @@ class Obfuscator extends Container
 	 */
 	private function obfuscateDirectory(string $target, string $source, bool $keepMode = false)
 	{
-		global $config, $isMethodGathering;
+		global $config;
 
 		static $recursionLevel = 0;
 
@@ -226,27 +214,21 @@ class Obfuscator extends Container
 							} else {
 
 								$obfuscatedString = $this->obfuscate($sourcePath);
-								if (!$isMethodGathering) {
+								if ($obfuscatedString === null) {
 
-									if ($obfuscatedString === null) {
+									if (isset($conf->abort_on_error)) {
 
-										if (isset($conf->abort_on_error)) {
-
-											fprintf(STDERR, "Aborting...%s", PHP_EOL);
-											exit(57);
-										}
+										fprintf(STDERR, "Aborting...%s", PHP_EOL);
+										exit(57);
 									}
-									file_put_contents($targetPath, $obfuscatedString . PHP_EOL);
 								}
+								file_put_contents($targetPath, $obfuscatedString . PHP_EOL);
 							}
 
-							if (!$isMethodGathering) {
-
-								touch($targetPath, $sourceStat['mtime']);
-								chmod($targetPath, $sourceStat['mode']);
-								chgrp($targetPath, $sourceStat['gid']);
-								chown($targetPath, $sourceStat['uid']);
-							}
+							touch($targetPath, $sourceStat['mtime']);
+							chmod($targetPath, $sourceStat['mode']);
+							chgrp($targetPath, $sourceStat['gid']);
+							chown($targetPath, $sourceStat['uid']);
 							continue;
 						}
 					}
@@ -265,7 +247,7 @@ class Obfuscator extends Container
 	 */
 	private function obfuscate(string $filename): ?string
 	{
-		global $config, $parser, $prettyPrinter, $traverser, $isMethodGathering;
+		global $config, $parser, $prettyPrinter, $traverser;
 
 		$return = null;
 		if ($config instanceof Config) {
@@ -284,22 +266,16 @@ class Obfuscator extends Container
 
 			try {
 
-				if ($isMethodGathering) {
+				$source = implode('', $source);
+				if ($source == '') {
 
-					$source = implode('', $source);
-				} else {
+					if ($config->isAllowOverwriteEmptyFiles()) {
 
-					$source = php_strip_whitespace($filename);
-					if ($source == '') {
-
-						if ($config->isAllowOverwriteEmptyFiles()) {
-
-							return $source;
-						}
-						throw new Exception("Error obfuscating [$SrcFilename]: php_strip_whitespace returned an empty string!");
+						return $source;
 					}
-					fprintf(STDERR, "Obfuscating %s%s", $SrcFilename, PHP_EOL);
+					throw new Exception("Error obfuscating [$SrcFilename]: php_strip_whitespace returned an empty string!");
 				}
+				fprintf(STDERR, "Obfuscating %s%s", $SrcFilename, PHP_EOL);
 				try {
 
 
@@ -353,6 +329,27 @@ class Obfuscator extends Container
 
 				//  Use PHP-Parser function to output the obfuscated source, taking the modified obfuscated syntax tree as input
 				$code = trim($prettyPrinter->prettyPrintFile($stmts));
+
+				if ($config->isRemoveComment()) {
+
+					$tokens = token_get_all($code);
+					$output = '';
+					// remove comments and annotations
+					foreach ($tokens as $token) {
+						if (is_array($token)) {
+							if (in_array($token[0], [T_DOC_COMMENT, T_COMMENT])) {
+
+								continue;
+							}
+							$token = $token[1];
+						}
+						$output .= $token;
+					}
+					if ($output) {
+
+						$code = $output;
+					}
+				}
 
 				if ($config->isStripIndentation()) {
 

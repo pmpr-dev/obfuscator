@@ -36,19 +36,6 @@ class Config extends Container
 	}
 
 	/**
-	 * @var array
-	 */
-	protected array $includeNamespacesPrefix = [];
-
-	/**
-	 * @return array
-	 */
-	public function getIncludeNamespacesPrefix(): array
-	{
-		return $this->includeNamespacesPrefix;
-	}
-
-	/**
 	 * @var bool
 	 */
 	protected bool $cleanMode = false;
@@ -106,19 +93,6 @@ class Config extends Container
 	public function isFollowSymlinks(): bool
 	{
 		return $this->followSymlinks;
-	}
-
-	/***
-	 * @var bool
-	 */
-	protected bool $ignoreSnakeCase = false;
-
-	/**
-	 * @return bool
-	 */
-	public function isIgnoreSnakeCase(): bool
-	{
-		return $this->ignoreSnakeCase;
 	}
 
 	/**
@@ -408,6 +382,19 @@ class Config extends Container
 	}
 
 	/**
+	 * @var bool
+	 */
+	protected bool $ignoreSnakeCaseMethods = false;
+
+	/**
+	 * @return bool
+	 */
+	public function isIgnoreSnakeCaseMethods(): bool
+	{
+		return $this->ignoreSnakeCaseMethods;
+	}
+
+	/**
 	 * @var array|string[]
 	 */
 	protected array $obfuscatePhpExt = ['php'];
@@ -568,11 +555,6 @@ class Config extends Container
 	protected bool $obfuscateInterfaceName = true;
 
 	/**
-	 * @var bool
-	 */
-	protected bool $obfuscateMethodNameByAnnotation = false;
-
-	/**
 	 * @return bool
 	 */
 	public function isObfuscateString(): bool
@@ -682,14 +664,6 @@ class Config extends Container
 	public function isObfuscateInterfaceName(): bool
 	{
 		return $this->obfuscateInterfaceName;
-	}
-
-	/**
-	 * @return bool
-	 */
-	public function isObfuscateMethodNameByAnnotation(): bool
-	{
-		return $this->obfuscateMethodNameByAnnotation;
 	}
 
 	/**
@@ -863,6 +837,13 @@ class Config extends Container
 	protected bool $abortOnError = true;
 
 	/**
+	 * remove all comments from obfuscated code
+	 *
+	 * @var bool
+	 */
+	protected bool $removeComment = true;
+
+	/**
 	 * all your obfuscated code will be generated on a single line
 	 *
 	 * @var bool
@@ -899,6 +880,14 @@ class Config extends Container
 	public function isAbortOnError(): bool
 	{
 		return $this->abortOnError;
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function isRemoveComment(): bool
+	{
+		return $this->removeComment;
 	}
 
 	/**
