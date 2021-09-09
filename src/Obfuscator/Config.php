@@ -31,7 +31,7 @@ class Config extends Container
 
 		$this->comment .= "/*   _______________________________________" . PHP_EOL;
 		$this->comment .= "    |  Obfuscated by PMPR - Php Obfuscator  |" . PHP_EOL;
-		$this->comment .= "    |			  %-13s 			|" . PHP_EOL;
+		$this->comment .= "    |             %-13s             |" . PHP_EOL;
 		$this->comment .= "    |_______________________________________|" . PHP_EOL;
 		$this->comment .= "*/" . PHP_EOL;
 	}
