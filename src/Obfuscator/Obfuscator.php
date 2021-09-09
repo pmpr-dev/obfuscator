@@ -223,6 +223,7 @@ class Obfuscator extends Container
 									}
 								}
 								file_put_contents($targetPath, $obfuscatedString . PHP_EOL);
+								fprintf(STDERR, "Obfuscated in %s%s", $targetPath, PHP_EOL);
 							}
 
 							touch($targetPath, $sourceStat['mtime']);
