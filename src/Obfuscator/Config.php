@@ -29,9 +29,10 @@ class Config extends Container
 			}
 		}
 
-		$this->comment .= "/*   _______________________________________________________" . PHP_EOL;
-		$this->comment .= "    |  Obfuscated by PMPR - Php Obfuscator  %-5.5s          |" . PHP_EOL;
-		$this->comment .= "    |_______________________________________________________|" . PHP_EOL;
+		$this->comment .= "/*   _______________________________________" . PHP_EOL;
+		$this->comment .= "    |  Obfuscated by PMPR - Php Obfuscator  |" . PHP_EOL;
+		$this->comment .= "    |			  %-13s 			|" . PHP_EOL;
+		$this->comment .= "    |_______________________________________|" . PHP_EOL;
 		$this->comment .= "*/" . PHP_EOL;
 	}
 
@@ -691,7 +692,12 @@ class Config extends Container
 	 */
 	public function getComment(): ?string
 	{
-		$unique = uniqid();
+		static $unique;
+
+		if (!$unique) {
+
+			$unique = uniqid();
+		}
 		return sprintf($this->comment, $unique);
 	}
 
@@ -842,6 +848,13 @@ class Config extends Container
 	protected bool $confirm = true;
 
 	/**
+	 * overwrite file if already exist
+	 *
+	 * @var bool
+	 */
+	protected bool $overwrite = true;
+
+	/**
 	 * @var bool
 	 */
 	protected bool $abortOnError = true;
@@ -882,6 +895,14 @@ class Config extends Container
 	public function isConfirm(): bool
 	{
 		return $this->confirm;
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function isOverwrite(): bool
+	{
+		return $this->overwrite;
 	}
 
 	/**

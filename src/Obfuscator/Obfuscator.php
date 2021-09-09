@@ -47,8 +47,8 @@ class Obfuscator extends Container
 
 				fprintf(STDERR, "Info:\tRemoving directory\t= [%s]%s", $path, PHP_EOL);
 				$this->getUtility()->removeDirectory($path);
-				exit(31);
 			}
+			exit(31);
 		}
 
 		$this->getUtility()->createContextDirectories($path);
@@ -94,7 +94,8 @@ class Obfuscator extends Container
 		static $recursionLevel = 0;
 
 		$maxNestedDir = $config->getMaxNestedDirectory();
-		if (++$recursionLevel <= $maxNestedDir) {
+		if ($config instanceof Config
+			&& ++$recursionLevel <= $maxNestedDir) {
 
 			if ($config->isFollowSymlinks()) {
 
@@ -184,12 +185,12 @@ class Obfuscator extends Container
 						}
 						if (is_file($sourcePath)) {
 
-							if (($targetStat !== false)
+							if ($targetStat !== false
 								&& is_dir($targetPath)) {
 
 								$this->getUtility()->removeDirectory($targetPath);
 							}
-							if (($targetStat !== false)
+							if (!$config->isOverwrite() && $targetStat !== false
 								&& ($sourceStat['mtime'] <= $targetStat['mtime'])) {
 
 								// do not process if source timestamp is not greater than target
@@ -218,7 +219,7 @@ class Obfuscator extends Container
 								$obfuscatedString = $this->obfuscate($sourcePath);
 								if ($obfuscatedString === null) {
 
-									if (isset($conf->abort_on_error)) {
+									if ($config->isAbortOnError()) {
 
 										fprintf(STDERR, "Aborting...%s", PHP_EOL);
 										exit(57);

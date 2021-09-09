@@ -58,6 +58,7 @@
 
   "silent": false,
   "confirm": true,
+  "overwrite": false,
   "abort_on_error": true,
   "remove_comment": true,
   "strip_indentation": true,
