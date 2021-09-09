@@ -1,9 +1,10 @@
+#!/usr/bin/env php
 <?php
 
 if (isset($_SERVER['SERVER_SOFTWARE'])
 	&& $_SERVER["SERVER_SOFTWARE"] != "") {
 
-	echo "<h1>Comand Line Interface Only!</h1>";
+	echo "<h1>Command Line Interface Only!</h1>";
 	die;
 }
 
@@ -210,3 +211,5 @@ if (file_exists($autoload)) {
 
 	fprintf(STDERR, "Please run composer install first%s", PHP_EOL);
 }
+
+?>
