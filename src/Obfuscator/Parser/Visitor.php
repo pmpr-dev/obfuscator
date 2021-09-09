@@ -1141,7 +1141,7 @@ class Visitor extends NodeVisitorAbstract implements ConstantInterface
 				|| $node instanceof Node\Expr\MethodCall
 				|| $node instanceof Node\Expr\StaticCall) {
 
-				if ($this->getUtility()->hasExcludeDocComment($node)) {
+				if (!$this->getUtility()->hasExcludeDocComment($node)) {
 
 					$nodeModified = $this->scrambleIdentifier($node, self::METHOD_TYPE);
 				}
