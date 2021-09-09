@@ -691,11 +691,8 @@ class Config extends Container
 	 */
 	public function getComment(): ?string
 	{
-		global $version;
-
-		$now = strftime("%F %T");
-
-		return sprintf($this->comment, $version, $now);
+		$unique = uniqid();
+		return sprintf($this->comment, $unique);
 	}
 
 	/**
