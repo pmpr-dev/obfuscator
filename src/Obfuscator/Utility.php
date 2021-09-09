@@ -24,8 +24,8 @@ class Utility implements ConstantInterface
 	{
 		$dirs = [
 			$path,
-			"{$path}/context",
-			"{$path}/obfuscated",
+//			"{$path}/context",
+//			"{$path}/obfuscated",
 		];
 		foreach ($dirs as $dir) {
 			if (!file_exists($dir)) {

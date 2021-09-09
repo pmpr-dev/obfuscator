@@ -471,7 +471,7 @@ class Scrambler extends Container
 		$this->ignorePrefixes = $ignorePrefixes;
 
 		$directory = $config->getTargetDirectory();
-		if ($directory) {
+		if ($directory && 0) {
 
 			$this->contextDirectory = "{$directory}/obfuscator/context";
 			if (file_exists("{$this->getContextDirectory()}/{$this->getType()}")) {

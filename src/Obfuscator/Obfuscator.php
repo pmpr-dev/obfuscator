@@ -38,7 +38,8 @@ class Obfuscator extends Container
 		$config = Config::getInstance($args);
 		$config->validate();
 
-		$path = "{$config->getTargetDirectory()}/obfuscator";
+//		$path = "{$config->getTargetDirectory()}/obfuscator";
+		$path = $config->getTargetDirectory();
 		if ($config->isCleanMode() &&
 			file_exists($path . self::SIGNATURE)) {
 
@@ -77,7 +78,8 @@ class Obfuscator extends Container
 		$traverser = new NodeTraverser();
 		$traverser->addVisitor(new Visitor($config, $scramblers));
 
-		$this->obfuscateDirectory("{$path}/obfuscated", $config->getSourceDirectory());
+//		$this->obfuscateDirectory("{$path}/obfuscated", $config->getSourceDirectory());
+		$this->obfuscateDirectory($path, $config->getSourceDirectory());
 	}
 
 	/**
@@ -223,7 +225,7 @@ class Obfuscator extends Container
 									}
 								}
 								file_put_contents($targetPath, $obfuscatedString . PHP_EOL);
-								fprintf(STDERR, "Obfuscated in %s%s", $targetPath, PHP_EOL);
+								fprintf(STDERR, "Obfuscated in %s%s", realpath($targetPath), PHP_EOL);
 							}
 
 							touch($targetPath, $sourceStat['mtime']);
