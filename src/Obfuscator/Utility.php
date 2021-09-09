@@ -293,39 +293,6 @@ class Utility implements ConstantInterface
 	/**
 	 * @param Node $node
 	 *
-	 * @return bool
-	 */
-	public function isObfuscatable(Node $node): bool
-	{
-		global $config;
-
-		$isObfuscate = true;
-		if ($config instanceof Config) {
-			if ($config->isIgnoreSnakeCaseMethods()) {
-
-				if ($node instanceof Node\Stmt\ClassMethod
-					|| $node instanceof Node\Expr\MethodCall
-					|| $node instanceof Node\Expr\StaticCall) {
-
-					$name = $this->getIdentifierName($node->name);
-					if ($this->isSnakeCase($name)) {
-
-						$isObfuscate = false;
-					}
-				}
-			}
-			if ($isObfuscate) {
-
-				$isObfuscate = !$this->hasExcludeDocComment($node);
-			}
-		}
-
-		return $isObfuscate;
-	}
-
-	/**
-	 * @param Node $node
-	 *
 	 * @return Doc|null
 	 */
 	public function getDocComment(Node $node): ?Doc

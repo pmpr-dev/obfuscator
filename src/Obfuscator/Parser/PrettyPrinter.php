@@ -7,8 +7,10 @@ use Obfuscator\Config;
 use Obfuscator\Interfaces\ConstantInterface;
 use Obfuscator\Scrambler;
 use Obfuscator\Traits\UtilityTrait;
+use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Expr\ArrayItem;
+use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Scalar\Encapsed;
 use PhpParser\Node\Scalar\EncapsedStringPart;
 use PhpParser\Node\Scalar\String_;
@@ -52,15 +54,15 @@ class PrettyPrinter extends Standard implements ConstantInterface
 
 			if ($this->isCallbackString($node)) {
 
-				global $scrambles;
-				$scramble = $scrambles[self::METHOD_TYPE] ?? null;
-				if ($scramble instanceof Scrambler) {
+				global $scramblers;
+				$scrambler = $scramblers[self::METHOD_TYPE] ?? null;
+				if ($scrambler instanceof Scrambler) {
 
 					$value = $node->value;
-					if (!$config->isIgnoreSnakeCaseMethods()
+					if (!$config->isIgnoreSnakeCaseMethod()
 						|| !$this->getUtility()->isSnakeCase($value)) {
 
-						$node->value = $scramble->scramble($value);
+						$node->value = $scrambler->scramble($value);
 					}
 				}
 			}
@@ -139,6 +141,15 @@ class PrettyPrinter extends Standard implements ConstantInterface
 						$isCallback = true;
 					}
 				}
+			}
+		} else if ($parent instanceof Arg) {
+
+			$parent = $parent->getAttribute('parent');
+			if ($parent instanceof FuncCall
+				&& isset($parent->name->parts[0])
+				&& $parent->name->parts[0] === 'method_exists') {
+
+				$isCallback = true;
 			}
 		}
 

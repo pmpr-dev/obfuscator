@@ -110,6 +110,11 @@ class Scrambler extends Container
 	protected array $ignorePrefixes = [];
 
 	/**
+	 * @var bool
+	 */
+	protected bool $ignoreSnakeCase = false;
+
+	/**
 	 * @return Config|null
 	 */
 	public function getConfig(): ?Config
@@ -132,6 +137,14 @@ class Scrambler extends Container
 	{
 		$mode = $this->getConfig()->getScrambleMode();
 		return !in_array($mode, [self::IDENTIFIER, self::HEXA, self::HASH, self::NUMERIC]) ? self::IDENTIFIER : $mode;
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function isIgnoreSnakeCase(): bool
+	{
+		return $this->ignoreSnakeCase;
 	}
 
 	/**
@@ -355,6 +368,7 @@ class Scrambler extends Container
 					$ignorePrefixes = array_flip($ignoreVariablesPrefix);
 				}
 
+				$this->ignoreSnakeCase = $config->isIgnoreSnakeCaseVariable();
 				break;
 			case self::PROPERTY_TYPE:
 
@@ -371,7 +385,6 @@ class Scrambler extends Container
 
 					$ignorePrefixes = array_flip($ignorePropertiesPrefix);
 				}
-
 
 				break;
 			case self::FUNCTION_OR_CLASS_TYPE:
@@ -438,7 +451,7 @@ class Scrambler extends Container
 
 				$ignorePrefixes = $this->prepareIgnores($ignorePrefixes, $config->getIgnoreMethodsPrefix());;
 
-
+				$this->ignoreSnakeCase = $config->isIgnoreSnakeCaseVariable();
 				break;
 			case self::LABEL_TYPE:
 				$ignores = array_flip(self::RESERVED_FUNCTIONS);
@@ -583,6 +596,12 @@ class Scrambler extends Container
 	 */
 	public function scramble(string $string, string $mode = null)
 	{
+		if ($this->isIgnoreSnakeCase()
+			&& $this->getUtility()->isSnakeCase($string)) {
+
+			return $string;
+		}
+
 		$isCaseSensitive = $this->isCaseSensitive();
 
 		$value          = $isCaseSensitive ? $string : strtolower($string);

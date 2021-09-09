@@ -33,7 +33,8 @@
   "ignore_interfaces_prefix": [],
   "ignore_namespaces_prefix": [],
 
-  "ignore_snake_case_methods": false,
+  "ignore_snake_case_method": false,
+  "ignore_snake_case_variable": false,
 
   "obfuscate_label": true,
   "obfuscate_string": true,

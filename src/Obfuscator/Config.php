@@ -384,14 +384,27 @@ class Config extends Container
 	/**
 	 * @var bool
 	 */
-	protected bool $ignoreSnakeCaseMethods = false;
+	protected bool $ignoreSnakeCaseMethod = false;
 
 	/**
 	 * @return bool
 	 */
-	public function isIgnoreSnakeCaseMethods(): bool
+	public function isIgnoreSnakeCaseMethod(): bool
 	{
-		return $this->ignoreSnakeCaseMethods;
+		return $this->ignoreSnakeCaseMethod;
+	}
+
+	/**
+	 * @var bool
+	 */
+	protected bool $ignoreSnakeCaseVariable = false;
+
+	/**
+	 * @return bool
+	 */
+	public function isIgnoreSnakeCaseVariable(): bool
+	{
+		return $this->ignoreSnakeCaseVariable;
 	}
 
 	/**
