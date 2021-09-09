@@ -48,8 +48,8 @@
   "ignore_snake_case_variable": true,
 
   "obfuscate_label": true,
-  "obfuscate_string": false,
-  "obfuscate_if_stmt": false,
+  "obfuscate_string": true,
+  "obfuscate_if_stmt": true,
   "obfuscate_variable": true,
   "obfuscate_loop_stmt": true,
   "obfuscate_method_name": true,
@@ -63,16 +63,16 @@
   "obfuscate_interface_name": false,
   "obfuscate_class_constant": false,
 
-  "shuffle_stmts": false,
+  "shuffle_stmts": true,
   "shuffle_stmts_chunk_mode": "fixed",
   "shuffle_stmts_chunk_ratio": 10,
   "shuffle_stmts_min_chunk_size": 1,
 
-  "silent": false,
+  "silent": true,
   "confirm": false,
   "abort_on_error": true,
-  "remove_comment": false,
-  "strip_indentation": false,
+  "remove_comment": true,
+  "strip_indentation": true,
 
   "source_directory": null,
   "target_directory": null,
