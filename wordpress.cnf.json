@@ -72,7 +72,7 @@
   "confirm": false,
   "abort_on_error": true,
   "remove_comment": true,
-  "strip_indentation": true,
+  "strip_indentation": false,
 
   "source_directory": null,
   "target_directory": null,
