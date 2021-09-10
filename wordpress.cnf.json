@@ -48,8 +48,8 @@
   "ignore_snake_case_variable": true,
 
   "obfuscate_label": true,
-  "obfuscate_string": false,
-  "obfuscate_if_stmt": false,
+  "obfuscate_string": true,
+  "obfuscate_if_stmt": true,
   "obfuscate_variable": true,
   "obfuscate_loop_stmt": true,
   "obfuscate_method_name": true,
@@ -73,7 +73,7 @@
   "overwrite": true,
   "abort_on_error": true,
   "remove_comment": true,
-  "strip_indentation": false,
+  "strip_indentation": true,
 
   "source_directory": null,
   "target_directory": null,
