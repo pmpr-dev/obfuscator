@@ -131,7 +131,8 @@ class PrettyPrinter extends Standard implements ConstantInterface
 
 					$value      = $parent->items[0]->value;
 					$isCallback = $value instanceof Node\Expr\Variable
-						|| $value instanceof Node\Expr\ClassConstFetch
+						|| ($value instanceof Node\Expr\ClassConstFetch
+							&& $this->getUtility()->getIdentifierName($value->name) == 'class')
 						|| $value instanceof Node\Scalar\MagicConst\Class_;
 				}
 			}
