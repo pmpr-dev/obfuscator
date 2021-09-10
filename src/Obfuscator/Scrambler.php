@@ -509,12 +509,11 @@ class Scrambler extends Container
 	}
 
 	/**
-	 * @param string      $string
-	 * @param string|null $mode
+	 * @param string $string
 	 *
 	 * @return mixed|string
 	 */
-	private function stringScramble(string $string, string $mode = null)
+	private function stringScramble(string $string)
 	{
 		// first char of the identifier
 		$firstChar = $this->getFirstChars()[mt_rand(0, $this->getFirstCharsLength())];
@@ -523,10 +522,7 @@ class Scrambler extends Container
 		// 32 chars random hex number derived from $s and lot of pepper and salt
 		$this->seed = str_shuffle(md5($notFirstChar . $string . md5($this->seed)));
 
-		if (!$mode) {
-
-			$mode = $this->getMode();
-		}
+		$mode = $this->getMode();
 		switch ($mode) {
 			case self::NUMERIC:
 				for ($i = 0, $l = $this->getLength() - 1; $i < $l; ++$i) {
@@ -589,12 +585,11 @@ class Scrambler extends Container
 	}
 
 	/**
-	 * @param string      $string
-	 * @param string|null $mode
+	 * @param string $string
 	 *
 	 * @return mixed|string
 	 */
-	public function scramble(string $string, string $mode = null)
+	public function scramble(string $string)
 	{
 		if ($this->isIgnoreSnakeCase()
 			&& $this->getUtility()->isSnakeCase($string)) {
@@ -626,7 +621,7 @@ class Scrambler extends Container
 			$limit = 50;
 			for ($i = 0; $i < $limit; ++$i) {
 
-				$x = $this->stringScramble($string, $mode);
+				$x = $this->stringScramble($string);
 				$z = strtolower($x);
 				$y = $isCaseSensitive ? $x : $z;
 				// this random value is either already used or a reserved name

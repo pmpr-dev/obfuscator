@@ -7,12 +7,7 @@ use Obfuscator\Config;
 use Obfuscator\Interfaces\ConstantInterface;
 use Obfuscator\Scrambler;
 use Obfuscator\Traits\UtilityTrait;
-use PhpParser\Node\Arg;
-use PhpParser\Node\Expr\Array_;
-use PhpParser\Node\Expr\ArrayItem;
-use PhpParser\Node\Expr\FuncCall;
-use PhpParser\Node\Scalar\Encapsed;
-use PhpParser\Node\Scalar\EncapsedStringPart;
+use PhpParser\Node;
 use PhpParser\Node\Scalar\String_;
 use PhpParser\PrettyPrinter\Standard;
 
@@ -88,11 +83,11 @@ class PrettyPrinter extends Standard implements ConstantInterface
 	}
 
 	/**
-	 * @param Encapsed $node
+	 * @param Node\Scalar\Encapsed $node
 	 *
 	 * @return string
 	 */
-	protected function pScalar_Encapsed(Encapsed $node): string
+	protected function pScalar_Encapsed(Node\Scalar\Encapsed $node): string
 	{
 		global $config;
 		if ($config instanceof Config
@@ -101,7 +96,7 @@ class PrettyPrinter extends Standard implements ConstantInterface
 			$result = '';
 			foreach ($node->parts as $element) {
 
-				if ($element instanceof EncapsedStringPart) {
+				if ($element instanceof Node\Scalar\EncapsedStringPart) {
 
 					$result .= $this->obfuscateString($element->value);
 				} else {
@@ -126,26 +121,24 @@ class PrettyPrinter extends Standard implements ConstantInterface
 	{
 		$isCallback = false;
 		$parent     = $node->getAttribute('parent');
-		if ($parent instanceof ArrayItem) {
+		if ($parent instanceof Node\Expr\ArrayItem) {
 
 			$parent = $parent->getAttribute('parent');
-			if ($parent instanceof Array_) {
+			if ($parent instanceof Node\Expr\Array_) {
 
 				if (count($parent->items) == 2
-					&& isset($parent->items[0]->value->name)) {
+					&& isset($parent->items[0]->value)) {
 
-					$objectName = $parent->items[0]->value->name;
-					if (in_array($objectName, ['this', '__CLASS__'])
-						|| strpos($objectName, '::class') !== false) {
-
-						$isCallback = true;
-					}
+					$value      = $parent->items[0]->value;
+					$isCallback = $value instanceof Node\Expr\Variable
+						|| $value instanceof Node\Expr\ClassConstFetch
+						|| $value instanceof Node\Scalar\MagicConst\Class_;
 				}
 			}
-		} else if ($parent instanceof Arg) {
+		} else if ($parent instanceof Node\Arg) {
 
 			$parent = $parent->getAttribute('parent');
-			if ($parent instanceof FuncCall
+			if ($parent instanceof Node\Expr\FuncCall
 				&& isset($parent->name->parts[0])
 				&& $parent->name->parts[0] === 'method_exists') {
 
