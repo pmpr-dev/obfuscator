@@ -1288,12 +1288,15 @@ class Visitor extends NodeVisitorAbstract implements ConstantInterface
 	 */
 	private function maybeObfuscateClassConstant(Node &$node, &$nodeModified = false)
 	{
-		if ($this->getConfig()->isObfuscateClassConstant()) {
+		$config = $this->getConfig();
+		if ($config->isObfuscateClassConstant()) {
 
 			$scrambler = $this->getScrambler(self::CLASS_CONSTANT_TYPE);
-			if ($node instanceof Node\Expr\ClassConstFetch
-				|| ($node instanceof Node\Const_
-					&& $this->isConstDefinition())) {
+			if ($node instanceof Node\Expr\ClassConstFetch) {
+
+				$nodeModified = $this->scrambleIdentifier($node, $scrambler);
+			} else if ($node instanceof Node\Const_
+				&& $this->isConstDefinition()) {
 
 				$nodeModified = $this->scrambleIdentifier($node, $scrambler);
 			}

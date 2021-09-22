@@ -127,13 +127,17 @@ class PrettyPrinter extends Standard implements ConstantInterface
 			if ($parent instanceof Node\Expr\Array_) {
 
 				if (count($parent->items) == 2
-					&& isset($parent->items[0]->value)) {
+					&& isset($parent->items[0])) {
+					$item = $parent->items[0];
+					// check not associative array
+					if ($item->value && !$item->key) {
 
-					$value      = $parent->items[0]->value;
-					$isCallback = $value instanceof Node\Expr\Variable
-						|| ($value instanceof Node\Expr\ClassConstFetch
-							&& $this->getUtility()->getIdentifierName($value->name) == 'class')
-						|| $value instanceof Node\Scalar\MagicConst\Class_;
+						$value      = $item->value;
+						$isCallback = $value instanceof Node\Expr\Variable
+							|| ($value instanceof Node\Expr\ClassConstFetch
+								&& $this->getUtility()->getIdentifierName($value->name) == 'class')
+							|| $value instanceof Node\Scalar\MagicConst\Class_;
+					}
 				}
 			}
 		} else if ($parent instanceof Node\Arg) {

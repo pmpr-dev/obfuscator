@@ -385,7 +385,25 @@ class Config extends Container
 	/**
 	 * @var bool
 	 */
+	protected bool $ignoreSnakeCaseClass = false;
+
+	/**
+	 * @var bool
+	 */
 	protected bool $ignoreSnakeCaseMethod = false;
+
+	/**
+	 * @var bool
+	 */
+	protected bool $ignoreSnakeCaseVariable = false;
+
+	/**
+	 * @return bool
+	 */
+	public function isIgnoreSnakeCaseClass(): bool
+	{
+		return $this->ignoreSnakeCaseClass;
+	}
 
 	/**
 	 * @return bool
@@ -394,11 +412,6 @@ class Config extends Container
 	{
 		return $this->ignoreSnakeCaseMethod;
 	}
-
-	/**
-	 * @var bool
-	 */
-	protected bool $ignoreSnakeCaseVariable = false;
 
 	/**
 	 * @return bool
