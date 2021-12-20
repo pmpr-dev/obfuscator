@@ -61,48 +61,6 @@ class Utility implements ConstantInterface
 	}
 
 	/**
-	 * @param $sum
-	 * @param $key
-	 *
-	 * @return string
-	 */
-	public function decodeString($sum, $key): string
-	{
-		$keys   = str_split($key, 3);
-		$unique = array_unique($keys);
-		sort($unique);
-
-		$letters    = [];
-		$characters = $this->getValidCharacters();
-		while ($sum > 0) {
-
-			$position           = intval(floor(log($sum, 2)));
-			$letters[$position] = $characters[$position];
-
-			$sum -= pow(2, $position);
-		}
-
-		ksort($letters);
-
-		$letters = array_values($letters);
-
-		$decode = [];
-
-		foreach ($unique as $index => $value) {
-
-			$decode[$value] = $letters[$index];
-		}
-
-		$string = '';
-		foreach ($keys as $number) {
-
-			$string .= $decode[$number];
-		}
-
-		return $string;
-	}
-
-	/**
 	 * @return array
 	 */
 	public function getValidCharacters(): array
