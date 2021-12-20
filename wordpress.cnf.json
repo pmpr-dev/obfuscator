@@ -64,7 +64,7 @@
   "obfuscate_function_name": false,
   "obfuscate_interface_name": false,
 
-  "shuffle_stmts": true,
+  "shuffle_stmts": false,
   "shuffle_stmts_chunk_mode": "ratio",
   "shuffle_stmts_chunk_ratio": 1,
   "shuffle_stmts_min_chunk_size": 1,
@@ -76,8 +76,8 @@
   "remove_comment": true,
   "strip_indentation": true,
 
-  "source_directory": null,
-  "target_directory": null,
+  "source_directory": "null",
+  "target_directory": "null",
 
   "keep": [],
   "skip": [],
