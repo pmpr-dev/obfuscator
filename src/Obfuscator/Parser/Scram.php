@@ -1265,7 +1265,7 @@ class Scram extends Visitor
 	 */
 	public function isValidConstantFetch($node): bool
 	{
-		$isValid = false;
+		$isValid = true;
 		if ($node instanceof Node\Expr\ClassConstFetch) {
 			$parent = $node->getAttribute('parent');
 			if ($parent instanceof Node\Expr\BinaryOp\Concat) {
@@ -1273,7 +1273,7 @@ class Scram extends Visitor
 				$isValid = $this->isValidValue($parent);
 			} else if ($parent instanceof Node\Const_) {
 
-				$isValid = true;
+				$isValid = false;
 			}
 		}
 		return $isValid;
