@@ -1237,7 +1237,7 @@ class Scram extends Visitor
 						$value = strtolower($name);
 					}
 
-					if ($encode) {
+					if ($this->isValidConstantFetch($node) && $encode) {
 
 						$nodeModified = true;
 
@@ -1256,6 +1256,27 @@ class Scram extends Visitor
 				$nodeModified = $this->scrambleIdentifier($node, $scrambler);
 			}
 		}
+	}
+
+	/**
+	 * @param $node
+	 *
+	 * @return bool
+	 */
+	public function isValidConstantFetch($node): bool
+	{
+		$isValid = false;
+		if ($node instanceof Node\Expr\ClassConstFetch) {
+			$parent = $node->getAttribute('parent');
+			if ($parent instanceof Node\Expr\BinaryOp\Concat) {
+
+				$isValid = $this->isValidValue($parent);
+			} else if ($parent instanceof Node\Const_) {
+
+				$isValid = true;
+			}
+		}
+		return $isValid;
 	}
 
 	/**
