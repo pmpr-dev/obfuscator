@@ -354,6 +354,7 @@ class Scrambler extends Container
 					$ignorePrefixes = array_flip($ignoreClassConstantsPrefix);
 				}
 
+				$this->ignoreSnakeCase = $config->isIgnoreSnakeCaseClass();
 
 				break;
 			case self::VARIABLE_TYPE:
@@ -430,7 +431,6 @@ class Scrambler extends Container
 				$ignorePrefixes = $this->prepareIgnores($ignorePrefixes, $config->getIgnoreInterfacesPrefix());
 
 				$ignorePrefixes = $this->prepareIgnores($ignorePrefixes, $config->getIgnoreNamespacesPrefix());
-
 
 				break;
 			case self::METHOD_TYPE:

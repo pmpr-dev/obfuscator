@@ -20,22 +20,6 @@ class PrettyPrinter extends Standard implements ConstantInterface
 	use UtilityTrait;
 
 	/**
-	 * @param $string
-	 *
-	 * @return string
-	 */
-	private function obfuscateString($string): string
-	{
-		$length = strlen($string);
-		$result = '';
-		for ($i = 0; $i < $length; ++$i) {
-
-			$result .= mt_rand(0, 1) ? "\x" . dechex(ord($string[$i])) : "\\" . decoct(ord($string[$i]));
-		}
-		return $result;
-	}
-
-	/**
 	 * @param String_ $node
 	 *
 	 * @return string
@@ -64,7 +48,7 @@ class PrettyPrinter extends Standard implements ConstantInterface
 			$string = $node->value;
 			if ($config->isObfuscateString()) {
 
-				$result = $this->obfuscateString($string);
+				$result = $this->getUtility()->obfuscateString($string);
 				if (!strlen($result)) {
 
 					$result = "''";
@@ -98,7 +82,7 @@ class PrettyPrinter extends Standard implements ConstantInterface
 
 				if ($element instanceof Node\Scalar\EncapsedStringPart) {
 
-					$result .= $this->obfuscateString($element->value);
+					$result .= $this->getUtility()->obfuscateString($element->value);
 				} else {
 
 					$result .= '{' . $this->p($element) . '}';

@@ -54,6 +54,7 @@
   "obfuscate_variable": true,
   "obfuscate_loop_stmt": true,
   "obfuscate_method_name": true,
+  "obfuscate_class_constant": true,
 
   "obfuscate_constant": false,
   "obfuscate_property": false,
@@ -61,12 +62,11 @@
   "obfuscate_class_name": false,
   "obfuscate_trait_name": false,
   "obfuscate_function_name": false,
-  "obfuscate_class_constant": false,
   "obfuscate_interface_name": false,
 
   "shuffle_stmts": true,
-  "shuffle_stmts_chunk_mode": "fixed",
-  "shuffle_stmts_chunk_ratio": 10,
+  "shuffle_stmts_chunk_mode": "ratio",
+  "shuffle_stmts_chunk_ratio": 1,
   "shuffle_stmts_min_chunk_size": 1,
 
   "silent": true,

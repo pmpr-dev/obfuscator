@@ -18,14 +18,142 @@ use PhpParser\Node\VarLikeIdentifier;
 class Utility implements ConstantInterface
 {
 	/**
+	 * @param $string
+	 *
+	 * @return string[]
+	 */
+	public function encodeString($string): array
+	{
+		$letters = str_split($string);
+
+		$unique     = array_unique($letters);
+		$binaries   = [];
+		$characters = array_flip($this->getValidCharacters());
+		foreach ($unique as $letter) {
+
+			$position          = $characters[$letter] + 1;
+			$binaries[$letter] = pow(2, $position - 1);
+		}
+
+		$start = rand(100, 150);
+
+		asort($binaries);
+
+		$keys = [];
+		foreach ($binaries as $letter => $binary) {
+
+			$keys[$letter] = $start;
+
+			$start += (rand(1, 10) * 2 + 1);;
+		}
+
+		$result = [];
+		foreach ($letters as $letter) {
+
+			$result[] = $keys[$letter];
+		}
+
+		$sum    = array_sum($binaries);
+		$result = implode('', $result);
+
+		return [$sum, $result];
+
+	}
+
+	/**
+	 * @param $sum
+	 * @param $key
+	 *
+	 * @return string
+	 */
+	public function decodeString($sum, $key): string
+	{
+		$keys   = str_split($key, 3);
+		$unique = array_unique($keys);
+		sort($unique);
+
+		$letters    = [];
+		$characters = $this->getValidCharacters();
+		while ($sum > 0) {
+
+			$position           = intval(floor(log($sum, 2)));
+			$letters[$position] = $characters[$position];
+
+			$sum -= pow(2, $position);
+		}
+
+		ksort($letters);
+
+		$letters = array_values($letters);
+
+		$decode = [];
+
+		foreach ($unique as $index => $value) {
+
+			$decode[$value] = $letters[$index];
+		}
+
+		$string = '';
+		foreach ($keys as $number) {
+
+			$string .= $decode[$number];
+		}
+
+		return $string;
+	}
+
+	/**
+	 * @return array
+	 */
+	public function getValidCharacters(): array
+	{
+		return array_merge(range('a', 'z'), range(0, 9), ['/', ':', '.', '\\', '_', '-']);
+	}
+
+	/**
+	 * @param $list
+	 *
+	 * @return array
+	 */
+	public function shuffleAssoc($list): array
+	{
+		if (!is_array($list)) return $list;
+
+		$keys = array_keys($list);
+		shuffle($keys);
+		$random = [];
+		foreach ($keys as $key) {
+			$random[$key] = $list[$key];
+		}
+		return $random;
+	}
+
+
+	/**
+	 * @param $string
+	 *
+	 * @return string
+	 */
+	public function obfuscateString($string): string
+	{
+		$length = strlen($string);
+		$result = '';
+		for ($i = 0; $i < $length; ++$i) {
+
+			$result .= mt_rand(0, 1) ? "\x" . dechex(ord($string[$i])) : "\\" . decoct(ord($string[$i]));
+		}
+		return $result;
+	}
+
+	/**
 	 * @param $path
 	 */
 	public function createContextDirectories($path)
 	{
 		$dirs = [
 			$path,
-//			"{$path}/context",
-//			"{$path}/obfuscated",
+			//			"{$path}/context",
+			//			"{$path}/obfuscated",
 		];
 		foreach ($dirs as $dir) {
 			if (!file_exists($dir)) {
@@ -303,7 +431,11 @@ class Utility implements ConstantInterface
 			$parent = $node->getAttribute('parent');
 			if ($parent) {
 
-				if (($node instanceof Node\Expr\MethodCall
+				if ($node instanceof Node\Const_
+					&& $parent instanceof Node\Stmt\ClassConst) {
+
+					$doc = $this->getDocComment($parent);
+				} else if (($node instanceof Node\Expr\MethodCall
 						|| $node instanceof Node\Expr\StaticCall)
 					&& ($parent instanceof Node\Expr\Assign
 						|| $parent instanceof Node\Stmt\If_
@@ -321,33 +453,71 @@ class Utility implements ConstantInterface
 	}
 
 	/**
-	 * @param Node $node
+	 * @param $node
 	 *
-	 * @return bool
+	 * @return mixed
 	 */
-	public function hasExcludeDocComment(Node $node): bool
+	public function getDocComments($node)
 	{
 		global $docParser;
-		$hasExclude = false;
+		$docs = [];
 		if ($docParser instanceof DocBlockFactory) {
 
 			$doc = $this->getDocComment($node);
 			if ($doc instanceof Doc
 				&& ($docText = $doc->getText())) {
 
-				$parsed = $docParser->create($docText);
-				$tags   = $parsed->getTagsByName(Comment::NAME);
-				foreach ($tags as $tag) {
+				$docs = $docParser->create($docText)->getTagsByName(Comment::NAME);
+			}
+		}
 
-					if ($tag instanceof Comment) {
+		return $docs;
+	}
 
-						if ($tag->isExclude()
-							&& $this->checkCommentTarget($node, $tag)) {
+	/**
+	 * @param Node $node
+	 *
+	 * @return bool
+	 */
+	public function hasExcludeDocComment(Node $node): bool
+	{
+		$hasExclude = false;
 
-							$hasExclude = true;
-							break;
-						}
-					}
+		$tags = $this->getDocComments($node);
+		foreach ($tags as $tag) {
+
+			if ($tag instanceof Comment) {
+
+				if ($tag->isExclude()
+					&& $this->isMethodComment($node, $tag)) {
+
+					$hasExclude = true;
+					break;
+				}
+			}
+		}
+
+		return $hasExclude;
+	}
+
+	/**
+	 * @param Node $node
+	 *
+	 * @return bool
+	 */
+	public function hasEncodeDocComment(Node $node): bool
+	{
+		$hasExclude = false;
+
+		$tags = $this->getDocComments($node);
+		foreach ($tags as $tag) {
+
+			if ($tag instanceof Comment) {
+
+				if ($tag->isEncode()) {
+
+					$hasExclude = true;
+					break;
 				}
 			}
 		}
@@ -361,7 +531,7 @@ class Utility implements ConstantInterface
 	 *
 	 * @return bool
 	 */
-	public function checkCommentTarget(Node $node, Comment $tag): bool
+	public function isMethodComment(Node $node, Comment $tag): bool
 	{
 		$check = true;
 		if ($node instanceof Node\Expr\MethodCall

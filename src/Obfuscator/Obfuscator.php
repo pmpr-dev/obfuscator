@@ -4,8 +4,9 @@ namespace Obfuscator;
 
 use Exception;
 use Obfuscator\Parser\Comment;
+use Obfuscator\Parser\Grab;
 use Obfuscator\Parser\PrettyPrinter;
-use Obfuscator\Parser\Visitor;
+use Obfuscator\Parser\Scram;
 use phpDocumentor\Reflection\DocBlockFactory;
 use PhpParser\Error;
 use PhpParser\Node\Stmt\Use_;
@@ -33,12 +34,32 @@ class Obfuscator extends Container
 	 */
 	private function init(array $args = [])
 	{
-		global $config, $scramblers, $parser, $prettyPrinter, $traverser, $docParser;
+		global $config, $scramblers, $parser, $prettyPrinter, $traverser, $docParser, $grabbed;
 
 		$config = Config::getInstance($args);
 		$config->validate();
 
-//		$path = "{$config->getTargetDirectory()}/obfuscator";
+		$docParser = DocBlockFactory::createInstance([
+			Comment::NAME => Comment::class,
+		]);
+
+		$prettyPrinter = new PrettyPrinter();
+
+		$types = [
+			self::LABEL_TYPE,
+			self::METHOD_TYPE,
+			self::CONSTANT_TYPE,
+			self::VARIABLE_TYPE,
+			self::PROPERTY_TYPE,
+			self::CLASS_CONSTANT_TYPE,
+			self::FUNCTION_OR_CLASS_TYPE,
+		];
+
+		foreach ($types as $type) {
+
+			$scramblers[$type] = new Scrambler($type, $config);
+		}
+
 		$path = $config->getTargetDirectory();
 		if ($config->isCleanMode() &&
 			file_exists($path . self::SIGNATURE)) {
@@ -51,43 +72,33 @@ class Obfuscator extends Container
 			exit(31);
 		}
 
+		$source = $config->getSourceDirectory();
+
+		$parser    = (new ParserFactory())->create($config->getParserMode());
+		$traverser = new NodeTraverser();
+
+		$visitor = new Grab($config);
+		$traverser->addVisitor($visitor);
+
+		$this->parseDirectory($path, $source, true);
+
+		$this->updateGrabbed();
+
 		$this->getUtility()->createContextDirectories($path);
 
-		$types = [
-			self::LABEL_TYPE,
-			self::METHOD_TYPE,
-			self::CONSTANT_TYPE,
-			self::VARIABLE_TYPE,
-			self::PROPERTY_TYPE,
-			self::CLASS_CONSTANT_TYPE,
-			self::FUNCTION_OR_CLASS_TYPE,
-		];
+		$traverser->removeVisitor($visitor);
+		$visitor = new Scram($config, $scramblers);
+		$traverser->addVisitor($visitor);
 
-		$docParser = DocBlockFactory::createInstance([
-			Comment::NAME => Comment::class,
-		]);
-
-		$parser        = (new ParserFactory())->create($config->getParserMode());
-		$prettyPrinter = new PrettyPrinter();
-
-		foreach ($types as $type) {
-
-			$scramblers[$type] = new Scrambler($type, $config);
-		}
-
-		$traverser = new NodeTraverser();
-		$traverser->addVisitor(new Visitor($config, $scramblers));
-
-//		$this->obfuscateDirectory("{$path}/obfuscated", $config->getSourceDirectory());
-		$this->obfuscateDirectory($path, $config->getSourceDirectory());
+		$this->parseDirectory($path, $source);
 	}
 
 	/**
 	 * @param string $target
 	 * @param string $source
-	 * @param bool   $keepMode
+	 * @param bool   $grabbing
 	 */
-	private function obfuscateDirectory(string $target, string $source, bool $keepMode = false)
+	private function parseDirectory(string $target, string $source, bool $grabbing = false)
 	{
 		global $config;
 
@@ -112,12 +123,20 @@ class Obfuscator extends Container
 
 				if (!in_array($entry, ['.', '..'])) {
 
-					$newKeepMode = $keepMode;
-
 					$sourcePath = "{$source}/{$entry}";
-					$sourceStat = @lstat($sourcePath);
 					$targetPath = "{$target}/{$entry}";
-					$targetStat = @lstat($targetPath);
+
+					$sourceStat = $targetStat = false;
+
+
+					if (file_exists($sourcePath)) {
+
+						$sourceStat = @lstat($sourcePath);
+					}
+					if (file_exists($targetPath)) {
+
+						$targetStat = @lstat($targetPath);
+					}
 
 					if ($sourceStat === false) {
 
@@ -131,8 +150,7 @@ class Obfuscator extends Container
 						if (!$config->isFollowSymlinks()
 							&& is_link($sourcePath)) {
 
-							if ($targetStat !== false
-								&& is_link($targetPath)
+							if ($targetStat !== false && is_link($targetPath)
 								&& ($sourceStat['mtime'] <= $targetStat['mtime'])) {
 
 								continue;
@@ -154,11 +172,10 @@ class Obfuscator extends Container
 							// Do not warn on non existing symbolinc link target!
 							@symlink(readlink($sourcePath), $targetPath);
 							if (strtolower(PHP_OS) == 'linux') {
-								$x = `touch '$targetPath' --no-dereference --reference='$sourcePath' `;
+
+								`touch '$targetPath' --no-dereference --reference='$sourcePath' `;
 							}
-							continue;
-						}
-						if (is_dir($sourcePath)) {
+						} else if (is_dir($sourcePath)) {
 
 							if ($targetStat !== false) {
 
@@ -175,15 +192,8 @@ class Obfuscator extends Container
 
 								mkdir($targetPath, 0777, true);
 							}
-							if (is_array($config->getKeep())
-								&& in_array($sourcePath, $config->getKeep())) {
-
-								$newKeepMode = true;
-							}
-							$this->obfuscateDirectory($targetPath, $sourcePath, $newKeepMode);
-							continue;
-						}
-						if (is_file($sourcePath)) {
+							$this->parseDirectory($targetPath, $sourcePath);
+						} else if (is_file($sourcePath)) {
 
 							if ($targetStat !== false
 								&& is_dir($targetPath)) {
@@ -197,43 +207,38 @@ class Obfuscator extends Container
 								continue;
 							}
 
-							$extension = pathinfo($sourcePath, PATHINFO_EXTENSION);
+							$ext = pathinfo($sourcePath, PATHINFO_EXTENSION);
+							if ($grabbing) {
 
-							$keep = $keepMode;
-							if (is_array($config->getKeep())
-								&& in_array($sourcePath, $config->getKeep())) {
+								if ($ext == 'php') {
 
-								$keep = true;
-							}
-
-							if (!in_array($extension, $config->getObfuscatePhpExt())) {
-
-								$keep = true;
-							}
-
-							if ($keep) {
-
-								file_put_contents($targetPath, file_get_contents($sourcePath));
+									$this->grabbing($sourcePath);
+								}
 							} else {
 
-								$obfuscatedString = $this->obfuscate($sourcePath);
-								if ($obfuscatedString === null) {
+								if ($ext == 'php') {
 
-									if ($config->isAbortOnError()) {
+									$content = $this->obfuscate($sourcePath);
+									if ($content === null) {
 
-										fprintf(STDERR, "Aborting...%s", PHP_EOL);
-										exit(57);
+										if ($config->isAbortOnError()) {
+
+											fprintf(STDERR, "Aborting...%s", PHP_EOL);
+											exit(57);
+										}
 									}
-								}
-								file_put_contents($targetPath, $obfuscatedString . PHP_EOL);
-								fprintf(STDERR, "Obfuscated in %s%s", realpath($targetPath), PHP_EOL);
-							}
+								} else {
 
-							touch($targetPath, $sourceStat['mtime']);
-							chmod($targetPath, $sourceStat['mode']);
-							chgrp($targetPath, $sourceStat['gid']);
-							chown($targetPath, $sourceStat['uid']);
-							continue;
+									$content = file_get_contents($sourcePath);
+								}
+
+								file_put_contents($targetPath, $content . PHP_EOL);
+
+								touch($targetPath, $sourceStat['mtime']);
+								chmod($targetPath, $sourceStat['mode']);
+								chgrp($targetPath, $sourceStat['gid']);
+								chown($targetPath, $sourceStat['uid']);
+							}
 						}
 					}
 				}
@@ -241,6 +246,81 @@ class Obfuscator extends Container
 
 			closedir($dp);
 			--$recursionLevel;
+		}
+	}
+
+	private function updateGrabbed()
+	{
+		global $grabbed;
+
+		if (is_array($grabbed)) {
+
+			foreach ($grabbed as $type => $items) {
+
+				foreach ($items as $key => $item) {
+
+					$value = $item['value'] ?? false;
+					if ($value && preg_match('/{(.*)::(.*)}/', $value, $matches)) {
+
+						if (isset($matches[0], $matches[1], $matches[2])) {
+
+							$find   = $matches[0];
+							$first  = $matches[1];
+							$second = $matches[2];
+
+							if (isset($grabbed[$first][$second])) {
+
+								$val = $grabbed[$first][$second]['value'];
+							} else {
+
+								$val = strtolower($second);
+							}
+							$item['value']        = str_replace($find, $val, $value);
+							$grabbed[$type][$key] = $item;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * @param string $filename
+	 */
+	private function grabbing(string $filename)
+	{
+		global $config, $parser, $traverser;
+
+		if ($config instanceof Config) {
+
+			$source = file($filename);
+
+			if (isset($source[0]) && substr($source[0], 0, 2) == '#!') {
+
+				$tmpFilename = tempnam(sys_get_temp_dir(), self::PREFIX);
+				file_put_contents($tmpFilename, implode(PHP_EOL, $source));
+				$filename = $tmpFilename; // override
+			}
+
+			try {
+				try {
+
+					if (is_array($source)) {
+
+						$source = implode('', $source);
+					}
+					// PHP-Parser returns the syntax tree
+					$stmts = $parser->parse($source);
+				} catch (Error $e) {
+
+					$stmts = $parser->parse(file_get_contents($filename));
+				}
+
+				$traverser->traverse($stmts);
+			} catch (Exception $e) {
+
+				fprintf(STDERR, "Obfuscator Parse Error [%s]:%s\t%s%s", $filename, PHP_EOL, $e->getMessage(), PHP_EOL);
+			}
 		}
 	}
 
@@ -257,10 +337,9 @@ class Obfuscator extends Container
 		if ($config instanceof Config) {
 
 			$source      = file($filename);
-			$SrcFilename = $filename;
 			$tmpFilename = $firstLine = '';
 
-			if (substr($source[0], 0, 2) == '#!') {
+			if (isset($source[0]) && substr($source[0], 0, 2) == '#!') {
 
 				$firstLine   = array_shift($source);
 				$tmpFilename = tempnam(sys_get_temp_dir(), self::PREFIX);
@@ -271,35 +350,17 @@ class Obfuscator extends Container
 			try {
 
 				$source = implode('', $source);
+
 				if ($source == '') {
 
 					if ($config->isAllowOverwriteEmptyFiles()) {
 
 						return $source;
 					}
-					throw new Exception("Error obfuscating [$SrcFilename]: php_strip_whitespace returned an empty string!");
-				}
-				fprintf(STDERR, "Obfuscating %s%s", $SrcFilename, PHP_EOL);
-				try {
-
-
-					// PHP-Parser returns the syntax tree
-					$stmts = $parser->parse($source);
-				} catch (Error $e) {
-
-					$source = file_get_contents($filename);
-					$stmts  = $parser->parse($source);
-				}
-				if ($config->getDebugMode() === 2) {
-
-					$source = file_get_contents($filename);
-					$stmts  = $parser->parse($source);
+					throw new Exception("Error obfuscating php_strip_whitespace returned an empty string!");
 				}
 
-				if ($config->isDebugMode()) {
-
-					var_dump($stmts);
-				}
+				$stmts = $parser->parse($source);
 
 				//  Use PHP-Parser function to traverse the syntax tree and obfuscate names
 				$stmts = $traverser->traverse($stmts);
