@@ -13,13 +13,17 @@
   "ignore_constants": [],
   "ignore_variables": [
     "post",
+    "locale",
     "product",
     "typenow",
     "pagenow",
     "metaCaps",
+    "q_config",
     "polylang",
     "sitepress",
-    "cmb2Override"
+    "hook_suffix",
+    "cmb2Override",
+    "concatenate_scripts"
   ],
   "ignore_functions": [],
   "ignore_properties": [],
@@ -32,6 +36,10 @@
   "ignore_constants_prefix": [],
   "ignore_variables_prefix": [
     "wp",
+    "_wp",
+    "is_",
+    "current_",
+    "shortcode",
     "woocommerce"
   ],
   "ignore_methods_prefix": [],
