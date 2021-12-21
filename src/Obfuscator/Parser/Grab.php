@@ -94,10 +94,7 @@ class Grab extends Visitor
 					$name   = $this->getIdentifierName($item->name);
 					$result = $this->getGrabbedValue(self::CONSTANT_TYPE, $name);
 
-					if (isset($result['type'], $result['key'])) {
-
-						$value .= "{{$result['type']}::{$result['key']}}";
-					} else if (isset($result['value'])) {
+					if (isset($result['value'])) {
 
 						$value .= $result['value'];
 					} else {
@@ -128,10 +125,7 @@ class Grab extends Visitor
 		} else {
 
 			// store for last step
-			$value = [
-				'key'  => $key,
-				'type' => $type,
-			];
+			$value = "{{$type}::{$key}}";
 		}
 
 		return $value;

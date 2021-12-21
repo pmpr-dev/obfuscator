@@ -260,23 +260,30 @@ class Obfuscator extends Container
 				foreach ($items as $key => $item) {
 
 					$value = $item['value'] ?? false;
-					if ($value && preg_match('/{(.*)::(.*)}/', $value, $matches)) {
+					if ($value) {
 
-						if (isset($matches[0], $matches[1], $matches[2])) {
+						if (is_array($value)) {
 
-							$find   = $matches[0];
-							$first  = $matches[1];
-							$second = $matches[2];
+							$value = '';
+						}
+						if ($value && preg_match('/{(.*)::(.*)}/', $value, $matches)) {
 
-							if (isset($grabbed[$first][$second])) {
+							if (isset($matches[0], $matches[1], $matches[2])) {
 
-								$val = $grabbed[$first][$second]['value'];
-							} else {
+								$find   = $matches[0];
+								$first  = $matches[1];
+								$second = $matches[2];
 
-								$val = strtolower($second);
+								if (isset($grabbed[$first][$second])) {
+
+									$val = $grabbed[$first][$second]['value'];
+								} else {
+
+									$val = strtolower($second);
+								}
+								$item['value']        = str_replace($find, $val, $value);
+								$grabbed[$type][$key] = $item;
 							}
-							$item['value']        = str_replace($find, $val, $value);
-							$grabbed[$type][$key] = $item;
 						}
 					}
 				}
@@ -289,38 +296,36 @@ class Obfuscator extends Container
 	 */
 	private function grabbing(string $filename)
 	{
-		global $config, $parser, $traverser;
+		global $parser, $traverser;
 
-		if ($config instanceof Config) {
+		$source = file($filename);
 
-			$source = file($filename);
+		if (isset($source[0]) && substr($source[0], 0, 2) == '#!') {
 
-			if (isset($source[0]) && substr($source[0], 0, 2) == '#!') {
+			$tmpFilename = tempnam(sys_get_temp_dir(), self::PREFIX);
+			file_put_contents($tmpFilename, implode(PHP_EOL, $source));
+			$filename = $tmpFilename; // override
+		}
 
-				$tmpFilename = tempnam(sys_get_temp_dir(), self::PREFIX);
-				file_put_contents($tmpFilename, implode(PHP_EOL, $source));
-				$filename = $tmpFilename; // override
-			}
-
+		try {
+			fprintf(STDERR, "Grabbing %s data%s", $filename, PHP_EOL);
 			try {
-				try {
 
-					if (is_array($source)) {
+				if (is_array($source)) {
 
-						$source = implode('', $source);
-					}
-					// PHP-Parser returns the syntax tree
-					$stmts = $parser->parse($source);
-				} catch (Error $e) {
-
-					$stmts = $parser->parse(file_get_contents($filename));
+					$source = implode('', $source);
 				}
+				// PHP-Parser returns the syntax tree
+				$stmts = $parser->parse($source);
+			} catch (Error $e) {
 
-				$traverser->traverse($stmts);
-			} catch (Exception $e) {
-
-				fprintf(STDERR, "Obfuscator Parse Error [%s]:%s\t%s%s", $filename, PHP_EOL, $e->getMessage(), PHP_EOL);
+				$stmts = $parser->parse(file_get_contents($filename));
 			}
+
+			$traverser->traverse($stmts);
+		} catch (Exception $e) {
+
+			fprintf(STDERR, "Obfuscator Parse Error [%s]:%s\t%s%s", $filename, PHP_EOL, $e->getMessage(), PHP_EOL);
 		}
 	}
 
@@ -348,6 +353,7 @@ class Obfuscator extends Container
 			}
 
 			try {
+				fprintf(STDERR, "Obfuscating %s data%s", $filename, PHP_EOL);
 
 				$source = implode('', $source);
 
