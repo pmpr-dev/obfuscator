@@ -1,12 +1,11 @@
 {
-  "obfuscate_php_ext": ["php"],
+  "obfuscate_php_ext": [
+    "php"
+  ],
   "ignore_pre_defined_classes": "all",
-
   "parser_mode": "PREFER_PHP7",
-
   "scramble_mode": "hash",
   "scramble_length": 5,
-
   "ignore_traits": [],
   "ignore_labels": [],
   "ignore_methods": [],
@@ -26,8 +25,10 @@
   "ignore_properties": [],
   "ignore_interfaces": [],
   "ignore_namespaces": [],
-  "ignore_class_constants": [],
-
+  "ignore_class_constants": [
+    "CREATED_AT",
+    "UPDATED_AT"
+  ],
   "ignore_constants_prefix": [],
   "ignore_variables_prefix": [
     "wp",
@@ -37,17 +38,14 @@
   "ignore_functions_prefix": [],
   "ignore_properties_prefix": [],
   "ignore_class_constants_prefix": [],
-
   "ignore_traits_prefix": [],
   "ignore_labels_prefix": [],
   "ignore_classes_prefix": [],
   "ignore_interfaces_prefix": [],
   "ignore_namespaces_prefix": [],
-
   "ignore_snake_case_class": true,
   "ignore_snake_case_method": true,
   "ignore_snake_case_variable": true,
-
   "obfuscate_label": true,
   "obfuscate_string": true,
   "obfuscate_if_stmt": true,
@@ -55,7 +53,6 @@
   "obfuscate_loop_stmt": true,
   "obfuscate_method_name": true,
   "obfuscate_class_constant": true,
-
   "obfuscate_constant": false,
   "obfuscate_property": false,
   "obfuscate_namespace": false,
@@ -63,26 +60,21 @@
   "obfuscate_trait_name": false,
   "obfuscate_function_name": false,
   "obfuscate_interface_name": false,
-
   "shuffle_stmts": false,
   "shuffle_stmts_chunk_mode": "ratio",
   "shuffle_stmts_chunk_ratio": 1,
   "shuffle_stmts_min_chunk_size": 1,
-
   "silent": true,
   "confirm": false,
   "overwrite": true,
   "abort_on_error": true,
   "remove_comment": true,
   "strip_indentation": true,
-
   "source_directory": "null",
   "target_directory": "null",
-
   "keep": [],
   "skip": [],
   "allow_overwrite_empty_files": true,
-
   "follow_symlinks": false,
   "max_nested_directory": 99
 }
