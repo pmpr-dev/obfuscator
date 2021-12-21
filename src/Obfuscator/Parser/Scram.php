@@ -1218,10 +1218,9 @@ class Scram extends Visitor
 		$config = $this->getConfig();
 		if ($config->isObfuscateClassConstant()) {
 
-			$scrambler = $this->getScrambler(self::CLASS_CONSTANT_TYPE);
+			$scrambler    = $this->getScrambler(self::CLASS_CONSTANT_TYPE);
+			$nodeModified = false;
 			if ($node instanceof Node\Expr\ClassConstFetch) {
-
-				$nodeModified = false;
 
 				$name = $this->getIdentifierName($node->name);
 				if ($this->isValidValue($name)) {
@@ -1236,23 +1235,16 @@ class Scram extends Visitor
 
 						$value = strtolower($name);
 					}
+					if ($this->isValidConstantFetch($node) && $encode) {
 
-					if ($encode) {
+						$method = $this->getScrambler(self::METHOD_TYPE)->scramble('getDecodedConstant');
 
-						if ($this->isValidConstantFetch($node)) {
+						[$sum, $decodedKey] = $this->getUtility()->encodeString($value);
 
-							$nodeModified = true;
-
-							$method = $this->getScrambler(self::METHOD_TYPE)->scramble('getDecodedConstant');
-
-							[$sum, $decodedKey] = $this->getUtility()->encodeString($value);
-
-							$this->setIdentifierName($node->name, "{$method}({$sum}, \"{$this->getUtility()->obfuscateString($decodedKey)}\")");
-						} else {
-
-							$nodeModified = $this->scrambleIdentifier($node, $scrambler);
-						}
-					} else {
+						$this->setIdentifierName($node->name, "{$method}({$sum}, \"{$this->getUtility()->obfuscateString($decodedKey)}\")");
+						$nodeModified = true;
+					}
+					if (!$nodeModified) {
 
 						$nodeModified = $this->scrambleIdentifier($node, $scrambler);
 					}

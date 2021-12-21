@@ -136,7 +136,7 @@ class Scrambler extends Container
 	public function getMode(): ?string
 	{
 		$mode = $this->getConfig()->getScrambleMode();
-		return !in_array($mode, [self::IDENTIFIER, self::HEXA, self::HASH, self::NUMERIC]) ? self::IDENTIFIER : $mode;
+		return !in_array($mode, [self::IDENTIFIER, self::HEXA, self::HASH, self::NUMERIC]) ? self::HASH : $mode;
 	}
 
 	/**
@@ -354,7 +354,7 @@ class Scrambler extends Container
 					$ignorePrefixes = array_flip($ignoreClassConstantsPrefix);
 				}
 
-				$this->ignoreSnakeCase = $config->isIgnoreSnakeCaseClass();
+//				$this->ignoreSnakeCase = $config->isIgnoreSnakeCaseClass();
 
 				break;
 			case self::VARIABLE_TYPE:
@@ -557,7 +557,6 @@ class Scrambler extends Container
 				}
 		}
 		return $firstChar;
-
 	}
 
 	/***

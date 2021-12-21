@@ -33,7 +33,11 @@ class Grab extends Visitor
 			if ($this->isValidValue($name)) {
 
 				$value  = $this->getConstantValue($node);
-				$encode = $this->getUtility()->hasEncodeDocComment($node);
+				$encode = false;
+				if ($value) {
+
+					$encode = $this->getUtility()->hasEncodeDocComment($node);
+				}
 				$this->updateGrabber($name, $value, self::CONSTANT_TYPE, $encode);
 			}
 		}
@@ -57,7 +61,11 @@ class Grab extends Visitor
 
 				$name  = $this->getIdentifierName($subNode);
 				$value = $this->getGrabbedValue(self::CONSTANT_TYPE, $name);
-			} else if ($subNode instanceof Node\Scalar\String_) {
+			} else if (
+				$subNode instanceof Node\Scalar\String_
+				|| $subNode instanceof Node\Scalar\LNumber
+				|| $subNode instanceof Node\Scalar\DNumber
+			) {
 
 				$value = $subNode->value;
 			}
@@ -90,7 +98,12 @@ class Grab extends Visitor
 					$name = $this->getIdentifierName($item->name);
 
 					$value = $this->getGrabbedValue(self::CONSTANT_TYPE, $name);
-				} else if ($item instanceof Node\Scalar\String_) {
+				} else if (
+					$item instanceof Node\Scalar\String_
+					|| $item instanceof Node\Scalar\LNumber
+					|| $item instanceof Node\Scalar\DNumber
+
+				) {
 
 					$value .= $item->value;
 				}

@@ -463,11 +463,11 @@ class Config extends Container
 	protected int $scrambleLength = 16;
 
 	/**
-	 * allowed modes are identifier, hexa, numeric
+	 * allowed modes are identifier, hexa, numeric, hash
 	 *
 	 * @var string|null
 	 */
-	protected ?string $scrambleMode = 'identifier';
+	protected ?string $scrambleMode = self::HASH;
 
 	/**
 	 * @return string|null
