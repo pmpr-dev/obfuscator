@@ -1235,14 +1235,18 @@ class Scram extends Visitor
 
 						$value = strtolower($name);
 					}
-					if ($this->isValidConstantFetch($node) && $encode) {
+					if ($encode) {
 
-						$method = $this->getScrambler(self::METHOD_TYPE)->scramble('getDecodedConstant');
+						if ($node instanceof Node\Expr\ClassConstFetch
+							&& $this->isValidConstantFetch($node)) {
 
-						[$sum, $decodedKey] = $this->getUtility()->encodeString($value);
+							$method = $this->getScrambler(self::METHOD_TYPE)->scramble('getDecodedConstant');
 
-						$this->setIdentifierName($node->name, "{$method}({$sum}, \"{$this->getUtility()->obfuscateString($decodedKey)}\")");
-						$nodeModified = true;
+							[$sum, $decodedKey] = $this->getUtility()->encodeString($value);
+
+							$this->setIdentifierName($node->name, "{$method}({$sum}, \"{$this->getUtility()->obfuscateString($decodedKey)}\")");
+							$nodeModified = true;
+						}
 					}
 					if (!$nodeModified) {
 
@@ -1264,15 +1268,13 @@ class Scram extends Visitor
 	public function isValidConstantFetch($node): bool
 	{
 		$isValid = true;
-		if ($node instanceof Node\Expr\ClassConstFetch) {
-			$parent = $node->getAttribute('parent');
-			if ($parent instanceof Node\Expr\BinaryOp\Concat) {
+		$parent  = $node->getAttribute('parent');
+		if ($parent instanceof Node\Expr\BinaryOp\Concat) {
 
-				$isValid = $this->isValidConstantFetch($parent);
-			} else if ($parent instanceof Node\Const_) {
+			$isValid = $this->isValidConstantFetch($parent);
+		} else if ($parent instanceof Node\Const_) {
 
-				$isValid = false;
-			}
+			$isValid = false;
 		}
 		return $isValid;
 	}
