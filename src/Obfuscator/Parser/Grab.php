@@ -60,10 +60,6 @@ class Grab extends Visitor
 			} else if ($subNode instanceof Node\Scalar\String_) {
 
 				$value = $subNode->value;
-			} else {
-
-				$a = 1;
-				// this situation can not be occur
 			}
 		}
 
@@ -91,16 +87,9 @@ class Grab extends Visitor
 					$value .= $this->getConcatValue($item);
 				} else if ($item instanceof Node\Expr\ClassConstFetch) {
 
-					$name   = $this->getIdentifierName($item->name);
-					$result = $this->getGrabbedValue(self::CONSTANT_TYPE, $name);
+					$name = $this->getIdentifierName($item->name);
 
-					if (isset($result['value'])) {
-
-						$value .= $result['value'];
-					} else {
-
-						echo "{$name} is not exits \n";
-					}
+					$value = $this->getGrabbedValue(self::CONSTANT_TYPE, $name);
 				} else if ($item instanceof Node\Scalar\String_) {
 
 					$value .= $item->value;
@@ -119,16 +108,8 @@ class Grab extends Visitor
 	private function getGrabbedValue($type, $key)
 	{
 		global $grabbed;
-		if (isset($grabbed[$type][$key])) {
 
-			$value = $grabbed[$type][$key];
-		} else {
-
-			// store for last step
-			$value = "{{$type}::{$key}}";
-		}
-
-		return $value;
+		return $grabbed[$type][$key]['value'] ?? sprintf("%s::%s", $type, $key);
 	}
 
 	/**

@@ -34,7 +34,7 @@ class Obfuscator extends Container
 	 */
 	private function init(array $args = [])
 	{
-		global $config, $scramblers, $parser, $prettyPrinter, $traverser, $docParser, $grabbed;
+		global $config, $scramblers, $parser, $prettyPrinter, $traverser, $docParser;
 
 		$config = Config::getInstance($args);
 		$config->validate();
@@ -77,8 +77,7 @@ class Obfuscator extends Container
 		$parser    = (new ParserFactory())->create($config->getParserMode());
 		$traverser = new NodeTraverser();
 
-		$visitor = new Grab($config);
-		$traverser->addVisitor($visitor);
+		$traverser->addVisitor(new Grab($config));
 
 		$this->parseDirectory($path, $source, true);
 
@@ -86,11 +85,10 @@ class Obfuscator extends Container
 
 		$this->getUtility()->createContextDirectories($path);
 
-		$traverser->removeVisitor($visitor);
-		$visitor = new Scram($config, $scramblers);
-		$traverser->addVisitor($visitor);
+		$traverser = new NodeTraverser();
+		$traverser->addVisitor(new Scram($config, $scramblers));
 
-		$this->parseDirectory($path, $source);
+		$this->parseDirectory($path, $source, false);
 	}
 
 	/**
@@ -192,7 +190,7 @@ class Obfuscator extends Container
 
 								mkdir($targetPath, 0777, true);
 							}
-							$this->parseDirectory($targetPath, $sourcePath);
+							$this->parseDirectory($targetPath, $sourcePath, $grabbing);
 						} else if (is_file($sourcePath)) {
 
 							if ($targetStat !== false
@@ -283,6 +281,8 @@ class Obfuscator extends Container
 								}
 								$item['value']        = str_replace($find, $val, $value);
 								$grabbed[$type][$key] = $item;
+								fprintf(STDERR, "Update grabbed $ from %s to %s%s", $type, $second, $item['value'], PHP_EOL);
+
 							}
 						}
 					}
@@ -325,7 +325,7 @@ class Obfuscator extends Container
 			$traverser->traverse($stmts);
 		} catch (Exception $e) {
 
-			fprintf(STDERR, "Obfuscator Parse Error [%s]:%s\t%s%s", $filename, PHP_EOL, $e->getMessage(), PHP_EOL);
+			fprintf(STDERR, "Grabbing Parse Error [%s]:%s\t%s%s", $filename, PHP_EOL, $e->getMessage(), PHP_EOL);
 		}
 	}
 
@@ -353,7 +353,7 @@ class Obfuscator extends Container
 			}
 
 			try {
-				fprintf(STDERR, "Obfuscating %s data%s", $filename, PHP_EOL);
+				fprintf(STDERR, "Obfuscating %s%s", $filename, PHP_EOL);
 
 				$source = implode('', $source);
 

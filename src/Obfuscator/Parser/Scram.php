@@ -1237,15 +1237,21 @@ class Scram extends Visitor
 						$value = strtolower($name);
 					}
 
-					if ($this->isValidConstantFetch($node) && $encode) {
+					if ($encode) {
 
-						$nodeModified = true;
+						if ($this->isValidConstantFetch($node)) {
 
-						$method = $this->getScrambler(self::METHOD_TYPE)->scramble('getDecodedConstant');
+							$nodeModified = true;
 
-						[$sum, $decodedKey] = $this->getUtility()->encodeString($value);
+							$method = $this->getScrambler(self::METHOD_TYPE)->scramble('getDecodedConstant');
 
-						$this->setIdentifierName($node->name, "{$method}({$sum}, \"{$this->getUtility()->obfuscateString($decodedKey)}\")");
+							[$sum, $decodedKey] = $this->getUtility()->encodeString($value);
+
+							$this->setIdentifierName($node->name, "{$method}({$sum}, \"{$this->getUtility()->obfuscateString($decodedKey)}\")");
+						} else {
+
+							$nodeModified = $this->scrambleIdentifier($node, $scrambler);
+						}
 					} else {
 
 						$nodeModified = $this->scrambleIdentifier($node, $scrambler);
@@ -1270,7 +1276,7 @@ class Scram extends Visitor
 			$parent = $node->getAttribute('parent');
 			if ($parent instanceof Node\Expr\BinaryOp\Concat) {
 
-				$isValid = $this->isValidValue($parent);
+				$isValid = $this->isValidConstantFetch($parent);
 			} else if ($parent instanceof Node\Const_) {
 
 				$isValid = false;
