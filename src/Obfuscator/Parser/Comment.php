@@ -35,6 +35,11 @@ class Comment extends BaseTag implements StaticMethod
 	/**
 	 * @var bool
 	 */
+	protected bool $remove = false;
+
+	/**
+	 * @var bool
+	 */
 	protected bool $exclude = false;
 
 	/**
@@ -110,17 +115,25 @@ class Comment extends BaseTag implements StaticMethod
 	/**
 	 * @return bool
 	 */
-	public function isExclude(): bool
+	public function isEncode(): bool
 	{
-		return $this->exclude;
+		return $this->encode;
 	}
 
 	/**
 	 * @return bool
 	 */
-	public function isEncode(): bool
+	public function isRemove(): bool
 	{
-		return $this->encode;
+		return $this->remove;
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function isExclude(): bool
+	{
+		return $this->exclude;
 	}
 
 	/**

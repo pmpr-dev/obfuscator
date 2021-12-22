@@ -7,6 +7,7 @@ use Obfuscator\Config;
 use Obfuscator\Scrambler;
 use PhpParser\Node;
 use PhpParser\Node\VarLikeIdentifier;
+use PhpParser\NodeTraverser;
 
 /**
  * Class Scram
@@ -90,20 +91,25 @@ class Scram extends Visitor
 		}
 
 		parent::enterNode($node);
-
 	}
 
 	/**
-	 * @param Node $node
+	 * @param \PhpParser\Node $node
 	 *
-	 * @return array|Node|Node[]|Node\Stmt\Goto_|Node\Stmt\Goto_[]|Node\Stmt\If_[]|Node\Stmt\Label[]|null
-	 * @throws Exception
+	 * @return mixed
+	 * @throws \Exception
 	 */
 	public function leaveNode(Node $node)
 	{
 		global $debugMode;
 
 		$nodeModified = false;
+
+
+		if ($this->getUtility()->hasRemoveDocComment($node)) {
+
+			return NodeTraverser::REMOVE_NODE;
+		}
 
 		if ($node instanceof Node\Stmt\ClassConst) {
 

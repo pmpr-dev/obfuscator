@@ -463,6 +463,31 @@ class Utility implements ConstantInterface
 	 *
 	 * @return bool
 	 */
+	public function hasRemoveDocComment(Node $node): bool
+	{
+		$hasRemove = false;
+
+		$tags = $this->getDocComments($node);
+		foreach ($tags as $tag) {
+
+			if ($tag instanceof Comment) {
+
+				if ($tag->isRemove()) {
+
+					$hasRemove = true;
+					break;
+				}
+			}
+		}
+
+		return $hasRemove;
+	}
+
+	/**
+	 * @param Node $node
+	 *
+	 * @return bool
+	 */
 	public function hasEncodeDocComment(Node $node): bool
 	{
 		$hasExclude = false;
