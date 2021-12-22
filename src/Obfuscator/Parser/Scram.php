@@ -105,7 +105,6 @@ class Scram extends Visitor
 
 		$nodeModified = false;
 
-
 		if ($this->getUtility()->hasRemoveDocComment($node)) {
 
 			return NodeTraverser::REMOVE_NODE;

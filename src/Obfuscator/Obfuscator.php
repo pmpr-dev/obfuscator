@@ -7,10 +7,10 @@ use Obfuscator\Parser\Comment;
 use Obfuscator\Parser\Grab;
 use Obfuscator\Parser\PrettyPrinter;
 use Obfuscator\Parser\Scram;
+use Obfuscator\Parser\Traverser;
 use phpDocumentor\Reflection\DocBlockFactory;
 use PhpParser\Error;
 use PhpParser\Node\Stmt\Use_;
-use PhpParser\NodeTraverser;
 use PhpParser\ParserFactory;
 
 /**
@@ -75,7 +75,7 @@ class Obfuscator extends Container
 		$source = $config->getSourceDirectory();
 
 		$parser    = (new ParserFactory())->create($config->getParserMode());
-		$traverser = new NodeTraverser();
+		$traverser = new Traverser();
 
 		$traverser->addVisitor(new Grab($config));
 
@@ -85,7 +85,7 @@ class Obfuscator extends Container
 
 		$this->getUtility()->createContextDirectories($path);
 
-		$traverser = new NodeTraverser();
+		$traverser = new Traverser();
 		$traverser->addVisitor(new Scram($config, $scramblers));
 
 		$this->parseDirectory($path, $source, false);
