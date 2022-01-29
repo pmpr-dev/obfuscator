@@ -389,19 +389,35 @@ class Utility implements ConstantInterface
 			$parent = $node->getAttribute('parent');
 			if ($parent) {
 
+				$isValid = false;
 				if ($node instanceof Node\Const_
-					&& $parent instanceof Node\Stmt\ClassConst) {
+					|| $node instanceof Node\Stmt\ClassConst) {
 
-					$doc = $this->getDocComment($parent);
-				} else if (($node instanceof Node\Expr\MethodCall
-						|| $node instanceof Node\Expr\StaticCall)
-					&& ($parent instanceof Node\Expr\Assign
+					$isValid = true;
+				} else if ($node instanceof Node\Expr\ClassConstFetch) {
+
+					if ($parent instanceof Node\Arg
+						|| $parent instanceof Node\Expr\Assign
+						|| $parent instanceof Node\Expr\Assign
+						|| $parent instanceof Node\Stmt\Return_) {
+
+						$isValid = true;
+					}
+				} else if ($node instanceof Node\Expr\MethodCall
+					|| $node instanceof Node\Expr\StaticCall) {
+
+					if ($parent instanceof Node\Expr\Assign
 						|| $parent instanceof Node\Stmt\If_
 						|| $parent instanceof Node\Stmt\Return_
 						|| $parent instanceof Node\Stmt\Switch_
 						|| $parent instanceof Node\Stmt\Foreach_
 						|| $parent instanceof Node\Expr\MethodCall
-						|| $parent instanceof Node\Expr\StaticCall)) {
+						|| $parent instanceof Node\Expr\StaticCall) {
+
+						$isValid = true;
+					}
+				}
+				if ($isValid) {
 
 					$doc = $this->getDocComment($parent);
 				}

@@ -1225,42 +1225,42 @@ class Scram extends Visitor
 
 			$scrambler    = $this->getScrambler(self::CLASS_CONSTANT_TYPE);
 			$nodeModified = false;
-			if (!$this->getUtility()->hasExcludeDocComment($node)) {
+			if ($node instanceof Node\Expr\ClassConstFetch) {
 
-				if ($node instanceof Node\Expr\ClassConstFetch) {
+				$name = $this->getIdentifierName($node->name);
+				if ($this->isValidValue($name)) {
 
-					$name = $this->getIdentifierName($node->name);
-					if ($this->isValidValue($name)) {
+					global $grabbed;
+					$encode = false;
+					if (isset($grabbed[self::CONSTANT_TYPE][$name]['value'])) {
 
-						global $grabbed;
-						$encode = false;
-						if (isset($grabbed[self::CONSTANT_TYPE][$name]['value'])) {
+						$value  = $grabbed[self::CONSTANT_TYPE][$name]['value'];
+						$encode = $grabbed[self::CONSTANT_TYPE][$name]['encode'];
+					} else {
 
-							$value  = $grabbed[self::CONSTANT_TYPE][$name]['value'];
-							$encode = $grabbed[self::CONSTANT_TYPE][$name]['encode'];
-						} else {
+						$value = strtolower($name);
+					}
+					if ($encode) {
 
-							$value = strtolower($name);
-						}
-						if ($encode) {
+						if ($node instanceof Node\Expr\ClassConstFetch
+							&& $this->isValidConstantFetch($node)) {
 
-							if ($node instanceof Node\Expr\ClassConstFetch
-								&& $this->isValidConstantFetch($node)) {
+							$method = $this->getScrambler(self::METHOD_TYPE)->scramble('getDecodedConstant');
 
-								$method = $this->getScrambler(self::METHOD_TYPE)->scramble('getDecodedConstant');
+							[$sum, $decodedKey] = $this->getUtility()->encodeString($value);
 
-								[$sum, $decodedKey] = $this->getUtility()->encodeString($value);
-
-								$this->setIdentifierName($node->name, "{$method}({$sum}, \"{$this->getUtility()->obfuscateString($decodedKey)}\")");
-								$nodeModified = true;
-							}
-						}
-						if (!$nodeModified) {
-
-							$nodeModified = $this->scrambleIdentifier($node, $scrambler);
+							$this->setIdentifierName($node->name, "{$method}({$sum}, \"{$this->getUtility()->obfuscateString($decodedKey)}\")");
+							$nodeModified = true;
 						}
 					}
-				} else if ($node instanceof Node\Const_ && $this->isConstDefinition()) {
+					if (!$nodeModified && !$this->getUtility()->hasExcludeDocComment($node)) {
+
+						$nodeModified = $this->scrambleIdentifier($node, $scrambler);
+					}
+				}
+			} else if ($node instanceof Node\Const_ && $this->isConstDefinition()) {
+
+				if (!$this->getUtility()->hasExcludeDocComment($node)) {
 
 					$nodeModified = $this->scrambleIdentifier($node, $scrambler);
 				}
