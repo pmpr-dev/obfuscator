@@ -8,6 +8,8 @@ if (isset($_SERVER['SERVER_SOFTWARE'])
 	die;
 }
 
+const NOT_SPECIFIED = 'not-specified';
+
 $configs  = [];
 $args     = $argv;
 $pathInfo = pathinfo(realpath(array_shift($args)));
@@ -128,6 +130,28 @@ if ($configFilename == '') {
 	$configs = json_decode(file_get_contents($configFilename), true);
 	if ($configs) {
 
+		foreach ($configs as $key => $config) {
+
+			$val = read_arg($args, "--{$key}", true, true, NOT_SPECIFIED);
+			if (NOT_SPECIFIED !== $val) {
+
+				switch ($key) {
+					case 'keep':
+					case 'skip':
+						if (is_string($val)) {
+
+							$items = explode(',', $val);
+							foreach ($items as $index => $item) {
+
+							    $items[$index] = realpath($item);
+                            }
+							$configs[$key] = $items;
+						}
+						break;
+				}
+			}
+		}
+
 		if ($forceConfSilent) {
 
 			$configs['silent'] = true;
@@ -168,18 +192,20 @@ if ($configFilename == '') {
  * @param string $key
  * @param bool   $remove
  * @param false  $hasValue
+ * @param false  $default
  *
  * @return bool|mixed
  */
-function read_arg($args, string $key, $remove = true, $hasValue = false)
+function read_arg($args, string $key, $remove = true, $hasValue = false, $default = false)
 {
-	$return   = false;
+	$return   = $default;
 	$position = array_search($key, $args);
 	if ($position !== false
 		&& is_numeric($position)) {
 
 		$length = 1;
 		if ($hasValue) {
+
 			if (isset($args[$position + 1])) {
 
 				$return = $args[$position + 1];

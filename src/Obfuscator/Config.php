@@ -23,9 +23,6 @@ class Config extends Container
 			if (property_exists($this, $property)) {
 
 				$this->{$property} = $value;
-			} else {
-
-				$a = 1;
 			}
 		}
 

@@ -117,6 +117,8 @@ class Obfuscator extends Container
 				exit(53);
 			}
 
+			$skips = $config->getSkip();
+			$keeps = $config->getKeep();
 			while (($entry = readdir($dp)) !== false) {
 
 				if (!in_array($entry, ['.', '..'])) {
@@ -142,8 +144,7 @@ class Obfuscator extends Container
 						exit(54);
 					}
 
-					if (!is_array($config->getSkip())
-						|| !in_array($sourcePath, $config->getSkip())) {
+					if (!$this->isPathExcluded($sourcePath, $skips)) {
 
 						if (!$config->isFollowSymlinks()
 							&& is_link($sourcePath)) {
@@ -214,7 +215,10 @@ class Obfuscator extends Container
 								}
 							} else {
 
-								if ($ext == 'php') {
+								if ($ext != 'php' || $this->isPathExcluded($sourcePath, $keeps)) {
+
+									$content = file_get_contents($sourcePath);
+								} else {
 
 									$content = $this->obfuscate($sourcePath);
 									if ($content === null) {
@@ -225,9 +229,6 @@ class Obfuscator extends Container
 											exit(57);
 										}
 									}
-								} else {
-
-									$content = file_get_contents($sourcePath);
 								}
 
 								file_put_contents($targetPath, $content . PHP_EOL);
@@ -447,5 +448,29 @@ class Obfuscator extends Container
 			}
 		}
 		return $return;
+	}
+
+	/**
+	 * @param       $path
+	 * @param array $excludes
+	 *
+	 * @return bool
+	 */
+	private function isPathExcluded($path, $excludes = []): bool
+	{
+		$excluded = false;
+
+		if (is_array($excludes) && $excludes) {
+
+			foreach ($excludes as $exclude) {
+
+				if (strpos($path, $exclude) !== false) {
+
+					$excluded = true;
+					break;
+				}
+			}
+		}
+		return $excluded;
 	}
 }
