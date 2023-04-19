@@ -472,7 +472,7 @@ class Obfuscator extends Container
 
 			foreach ($excludes as $exclude) {
 
-				if (strpos($path, $exclude) !== false) {
+				if ($exclude && false !== strpos($path, $exclude)) {
 
                     fprintf(STDERR, "%s is excluded by %s", $path, $exclude, PHP_EOL);
                     $excluded = true;
