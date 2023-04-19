@@ -318,9 +318,10 @@ class Obfuscator extends Container
 				}
 				// PHP-Parser returns the syntax tree
 				$stmts = $parser->parse($source);
+                fprintf(STDERR, "%s data grabbed.%s", $filename, PHP_EOL);
 			} catch (Error $e) {
 
-                fprintf(STDERR, "Error on grabbing %s", $e->getMessage(), PHP_EOL);
+                fprintf(STDERR, "Grabbing Parse Error [%s]:%s\t%s%s", $filename, PHP_EOL, $e->getMessage(), PHP_EOL);
 
 				$stmts = $parser->parse(file_get_contents($filename));
 			}
