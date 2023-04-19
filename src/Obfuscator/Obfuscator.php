@@ -218,7 +218,8 @@ class Obfuscator extends Container
 								if ($ext != 'php' || $this->isPathExcluded($sourcePath, $keeps)) {
 
 									$content = file_get_contents($sourcePath);
-								} else {
+                                    fprintf(STDERR, "file %s not a php so let copy it.", $sourcePath, PHP_EOL);
+                                } else {
 
 									$content = $this->obfuscate($sourcePath);
 									if ($content === null) {
@@ -238,8 +239,14 @@ class Obfuscator extends Container
 								chgrp($targetPath, $sourceStat['gid']);
 								chown($targetPath, $sourceStat['uid']);
 							}
-						}
-					}
+						} else {
+
+                            fprintf(STDERR, "%s is not a file.", $sourcePath, PHP_EOL);
+                        }
+					} else {
+
+                        fprintf(STDERR, "%s excluded.", $sourcePath, PHP_EOL);
+                    }
 				}
 			}
 
@@ -318,7 +325,6 @@ class Obfuscator extends Container
 				}
 				// PHP-Parser returns the syntax tree
 				$stmts = $parser->parse($source);
-                fprintf(STDERR, "%s data grabbed.%s", $filename, PHP_EOL);
 			} catch (Error $e) {
 
                 fprintf(STDERR, "Grabbing Parse Error [%s]:%s\t%s%s", $filename, PHP_EOL, $e->getMessage(), PHP_EOL);
