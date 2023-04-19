@@ -320,6 +320,8 @@ class Obfuscator extends Container
 				$stmts = $parser->parse($source);
 			} catch (Error $e) {
 
+                fprintf(STDERR, "Error on grabbing %s", $e->getMessage(), PHP_EOL);
+
 				$stmts = $parser->parse(file_get_contents($filename));
 			}
 
