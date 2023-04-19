@@ -218,7 +218,6 @@ class Obfuscator extends Container
 								if ($ext != 'php' || $this->isPathExcluded($sourcePath, $keeps)) {
 
 									$content = file_get_contents($sourcePath);
-                                    fprintf(STDERR, "file %s not a php or it's excluded, so let copy it.", $sourcePath, PHP_EOL);
                                 } else {
 
 									$content = $this->obfuscate($sourcePath);
