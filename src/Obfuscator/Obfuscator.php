@@ -240,11 +240,11 @@ class Obfuscator extends Container
 							}
 						} else {
 
-                            fprintf(STDERR, "%s is not a file.", $sourcePath, PHP_EOL);
+                            fprintf(STDERR, "%s is not a file%s", $sourcePath, PHP_EOL);
                         }
 					} else {
 
-                        fprintf(STDERR, "%s excluded.", $sourcePath, PHP_EOL);
+                        fprintf(STDERR, "%s excluded%s", $sourcePath, PHP_EOL);
                     }
 				}
 			}
@@ -474,7 +474,7 @@ class Obfuscator extends Container
 
 				if ($exclude && false !== strpos($path, $exclude)) {
 
-                    fprintf(STDERR, "%s is excluded by %s", $path, $exclude, PHP_EOL);
+                    fprintf(STDERR, "%s is excluded by %s%s", $path, $exclude, PHP_EOL);
                     $excluded = true;
 					break;
 				}
