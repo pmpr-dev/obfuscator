@@ -22,6 +22,7 @@
     "polylang",
     "sitepress",
     "hook_suffix",
+    "withcomments",
     "cmb2Override",
     "concatenate_scripts"
   ],
