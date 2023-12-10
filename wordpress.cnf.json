@@ -14,6 +14,7 @@
   "ignore_variables": [
     "post",
     "locale",
+    "comment",
     "product",
     "typenow",
     "pagenow",
