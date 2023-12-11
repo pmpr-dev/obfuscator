@@ -25,6 +25,8 @@
     "hook_suffix",
     "withcomments",
     "cmb2Override",
+    "_wp_menu_nopriv",
+    "_wp_submenu_nopriv",
     "concatenate_scripts"
   ],
   "ignore_functions": [],
