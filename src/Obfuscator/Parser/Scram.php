@@ -1226,8 +1226,6 @@ class Scram extends Visitor
             $nodeModified = false;
             if ($node instanceof Node\Expr\ClassConstFetch) {
 
-                var_dump($node);
-
                 $name = $this->getIdentifierName($node->name);
                 if ($this->isValidValue($name)) {
 
