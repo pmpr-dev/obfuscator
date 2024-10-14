@@ -1241,13 +1241,17 @@ class Scram extends Visitor
                     }
                     if ($encode && $this->isValidConstantFetch($node)) {
 
-                        $method = $this->getScrambler(self::METHOD_TYPE)->scramble('getDecodedConstant');
+                        $methodScrambler = $this->getScrambler(self::METHOD_TYPE);
+
+                        $helper = $methodScrambler->scramble('getStaticHelper');
+                        $string = $methodScrambler->scramble('getString');
+                        $method = $methodScrambler->scramble('getDecodedConstant');
 
                         [$sum, $decodedKey] = $this->getUtility()->encodeString($value);
 
                         // change "Constants" interface name to "self"
                         $node->class->parts[0] = 'self';
-                        $this->setIdentifierName($node->name, "{$method}({$sum}, \"{$this->getUtility()->obfuscateString($decodedKey)}\")");
+                        $this->setIdentifierName($node->name, "{$helper}()->{$string}()->{$method}({$sum}, \"{$this->getUtility()->obfuscateString($decodedKey)}\")");
                         $nodeModified = true;
                     }
                     if (!$nodeModified && !$this->getUtility()->hasExcludeDocComment($node)) {

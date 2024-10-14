@@ -315,7 +315,7 @@ class Obfuscator extends Container
 		}
 
 		try {
-			fprintf(STDERR, "Grabbing %s data%s", $filename, PHP_EOL);
+//			fprintf(STDERR, "Grabbing %s data%s", $filename, PHP_EOL);
 			try {
 
 				if (is_array($source)) {
@@ -362,7 +362,7 @@ class Obfuscator extends Container
 			}
 
 			try {
-				fprintf(STDERR, "Obfuscating %s%s", $filename, PHP_EOL);
+//				fprintf(STDERR, "Obfuscating %s%s", $filename, PHP_EOL);
 
 				$source = implode('', $source);
 
